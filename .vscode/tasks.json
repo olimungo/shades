@@ -1,0 +1,63 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Kill Terminal",
+            "type": "shell",
+            "command": "kill $(pgrep -f mpfshell)",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Upload",
+            "type": "shell",
+            "command": "kill $(pgrep -f mpfshell); mpfshell -n -c 'open tty.usbserial-1410; mput ${fileBasename}'",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Upload All",
+            "type": "shell",
+            "command": "mpfshell -n -c 'open tty.usbserial-1410; mput .*\\.py; put index.html'",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Upload and Terminal",
+            "type": "shell",
+            "command": "ampy put ${fileBasename};nodemcu-tool terminal",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run",
+            "type": "shell",
+            "command": "ampy run ${fileBasename}",
+            "group": "build",
+            "problemMatcher": []
+        }
+        {
+            "label": "Erase flash",
+            "type": "shell",
+            "command": "esptool.py --port /dev/tty.usbserial-1410 erase_flash",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash ESP with micropython",
+            "type": "shell",
+            "command": "esptool.py --port /dev/tty.usbserial-1410 --baud 460800 write_flash --flash_size=detect 0 esp8266-20190529-v1.11.bin",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "mpfshell",
+            "type": "shell",
+            "command": "mpfshell -c open tty.usbserial-1410",
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}
