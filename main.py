@@ -1,17 +1,16 @@
 import time
-from machine import Timer, reset
+from machine import Timer, reset, unique_id
 from Web import WebServer
 from Wifi import WifiManager
 from Motor import MotorManager
 import settings
 
+# from Mqtt import MqttManager
+
 webServer = WebServer()
 wifiManager = WifiManager()
 motorManager = MotorManager()
-
-
-def rst():
-    reset()
+# mqttManager = MqttManager("192.168.0.215", 7)
 
 
 def handleWebRequest(emptyRequest, client, path, queryStringsArray):
@@ -25,6 +24,11 @@ def handleWebRequest(emptyRequest, client, path, queryStringsArray):
             print(path)
             motorManager.goUp()
             webServer.ok(client)
+
+            netId = settings.readNetId()
+            # mqttManager.sendMessage(
+            #    netId, "Non mais allo quoi",
+            # )
         elif path == "/action/go-down":
             print(path)
             motorManager.goDown()
@@ -78,7 +82,7 @@ def handleWifi(timer):
 
 
 timerWeb = Timer(-1)
-timerWeb.init(period=1000, mode=Timer.PERIODIC, callback=handleWeb)
+timerWeb.init(period=50, mode=Timer.PERIODIC, callback=handleWeb)
 
 timerWifi = Timer(-1)
 timerWifi.init(period=5000, mode=Timer.PERIODIC, callback=handleWifi)

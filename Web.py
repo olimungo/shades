@@ -67,6 +67,7 @@ class WebServer:
             _, url, _ = firstLine.split(" ")
 
             path = url
+
             if len(url.split("?")) == 2:
                 path, queryString = url.split("?")
                 queryStrings = queryString.split("&")

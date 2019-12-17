@@ -352,41 +352,43 @@
 
         <div class="spacer-vertical-big"></div>
 
-        <div class="align-horizontal">
-            <div class="label">
-                Shade number
+        <div class="align-vertical">
+            <div class="align-horizontal">
+                <div class="label">
+                    Shade number
+                </div>
+
+                <input id="netId" type="number" class="input-margin-left" value="%%NET_ID%%"
+                    onkeypress="if(this.value.length > 0) return false;"
+                    oninput="if(this.value.length > 1) return false; else setNetId(this.value)" />
             </div>
 
-            <input id="netId" type="number" class="input-margin-left" value="%%NET_ID%%"
-                onkeypress="if(this.value.length > 0) return false;"
-                oninput="if(this.value.length > 1) return false; else setNetId(this.value)" />
-        </div>
+            <div class="spacer-vertical"></div>
 
-        <div class="spacer-vertical"></div>
+            <div class="align-horizontal">
+                <div class="label">
+                    Motor reversed
+                </div>
 
-        <div class="align-horizontal">
-            <div class="label">
-                Motor reversed
+                <input class="switch" type="checkbox" %%MOTOR_REVERSED%% onclick="send('/settings/reverse-motor')" />
             </div>
 
-            <input class="switch" type="checkbox" %%MOTOR_REVERSED%% onclick="send('/settings/reverse-motor')" />
+            <div class="spacer-vertical"></div>
+
+            <div class="label">SSID</div>
+
+            <input id="essid" type="text" value="%%ESSID%%" />
+
+            <div class="spacer-vertical"></div>
+
+            <div class="label">Password</div>
+
+            <input id="pwd" type="password" />
+
+            <div class="spacer-vertical"></div>
+
+            <button class="connect-button" onclick="connect()">CONNECT</button>
         </div>
-
-        <div class="spacer-vertical"></div>
-
-        <div class="label">SSID</div>
-
-        <input id="essid" type="text" value="%%ESSID%%" />
-
-        <div class="spacer-vertical"></div>
-
-        <div class="label">Password</div>
-
-        <input id="pwd" type="password" />
-
-        <div class="spacer-vertical"></div>
-
-        <button class="connect-button" onclick="connect()">CONNECT</button>
     </div>
 
     <script>

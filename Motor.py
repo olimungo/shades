@@ -78,9 +78,7 @@ class MotorManager:
             self.__stop()
 
     def __motorCheck(self, timer=0):
-        self.irCheckTimer.init(
-            period=1000, mode=Timer.PERIODIC, callback=self.__irCheck
-        )
+        self.irCheckTimer.init(period=50, mode=Timer.PERIODIC, callback=self.__irCheck)
 
     def __moveMotor(self, direction):
         if direction == MotorDirection().CLOCKWISE:
@@ -99,7 +97,7 @@ class MotorManager:
             # If shade was on top or on bottom, delay the IR check
             # to give a bit of time to leave the reflective marker
             timer = Timer(-1)
-            timer.init(period=1000, mode=Timer.ONE_SHOT, callback=self.__motorCheck)
+            timer.init(period=500, mode=Timer.ONE_SHOT, callback=self.__motorCheck)
 
     def reverseMotor(self):
         motorReversed = settings.readMotorReversed()

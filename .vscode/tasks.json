@@ -20,7 +20,14 @@
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "mpfshell -n -c 'open tty.usbserial-1410; mput .*\\.py; put index.html'",
+            "command": "mpfshell -n -c 'open tty.usbserial-1410; mput .*\\.py; mput index.html'",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Setup WebREPL",
+            "type": "shell",
+            "command": "mpfshell -n -c 'open tty.usbserial-1410; import webrepl_setup'",
             "group": "build",
             "problemMatcher": []
         },

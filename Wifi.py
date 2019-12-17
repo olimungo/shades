@@ -1,10 +1,13 @@
 import network
 import settings
+import Blink
 
 
 class WifiManager:
     station = network.WLAN(network.STA_IF)
     ap = network.WLAN(network.AP_IF)
+    stationIpRecevied = False
+    blink = Blink.Blink()
 
     def __init__(self):
         self.station.active(True)
@@ -20,8 +23,14 @@ class WifiManager:
     def checkWifi(self):
         if self.station.ifconfig()[0] == "0.0.0.0":
             if self.ap.ifconfig()[0] == "0.0.0.0":
+                self.stationIpRecevied = False
                 self.__startAp()
         else:
+            if not self.stationIpRecevied:
+                self.stationIpRecevied = True
+                self.blink.fast()
+                print(self.getIp())
+
             if not self.ap.ifconfig()[0] == "0.0.0.0":
                 self.__stopAp()
 
