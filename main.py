@@ -4,13 +4,18 @@ from Web import WebServer
 from Wifi import WifiManager
 from Motor import MotorManager
 import settings
+from Mqtt import MqttManager
 
-# from Mqtt import MqttManager
+import ubinascii
+from umqtt.simple import MQTTClient
+
+
+MQTT_BROKER = "192.168.0.167"
 
 webServer = WebServer()
 wifiManager = WifiManager()
 motorManager = MotorManager()
-# mqttManager = MqttManager("192.168.0.215", 7)
+mqttManager = MqttManager(MQTT_BROKER, 2)
 
 
 def handleWebRequest(emptyRequest, client, path, queryStringsArray):
@@ -26,9 +31,6 @@ def handleWebRequest(emptyRequest, client, path, queryStringsArray):
             webServer.ok(client)
 
             netId = settings.readNetId()
-            # mqttManager.sendMessage(
-            #    netId, "Non mais allo quoi",
-            # )
         elif path == "/action/go-down":
             print(path)
             motorManager.goDown()
@@ -68,21 +70,26 @@ def handleWeb(timer):
     try:
         emptyRequest, client, path, queryStringsArray = webServer.handleRequest()
         handleWebRequest(emptyRequest, client, path, queryStringsArray)
-        # print("> motor: " + str(motorManager.motorState))
-        # print("> shade: " + str(motorManager.shadeState))
     except Exception as e:
         print("> Web exception: {}".format(e))
 
 
-def handleWifi(timer):
+def handleMqtt(timer):
     try:
-        wifiManager.checkWifi()
+        message = mqttManager.checkMessage()
+
+        if message == "up":
+            motorManager.goUp()
+        elif message == "down":
+            motorManager.goDown()
+        elif message == "stop":
+            motorManager.stop()
     except Exception as e:
-        print("> Wifi exception: {}".format(e))
+        print("> Mqtt exception: {}".format(e))
 
 
 timerWeb = Timer(-1)
 timerWeb.init(period=50, mode=Timer.PERIODIC, callback=handleWeb)
 
-timerWifi = Timer(-1)
-timerWifi.init(period=5000, mode=Timer.PERIODIC, callback=handleWifi)
+timerMqtt = Timer(-1)
+timerMqtt.init(period=500, mode=Timer.PERIODIC, callback=handleMqtt)

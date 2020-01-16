@@ -1,16 +1,35 @@
 import network
 import settings
 import Blink
+from machine import Timer
 
 
 class WifiManager:
     station = network.WLAN(network.STA_IF)
     ap = network.WLAN(network.AP_IF)
-    stationIpRecevied = False
+    stationIpAssigned = False
     blink = Blink.Blink()
+    checkConnectivityTimer = Timer(-1)
 
     def __init__(self):
         self.station.active(True)
+        self.checkConnectivityTimer.init(
+            period=5000, mode=Timer.PERIODIC, callback=self._checkConnectivity
+        )
+
+    def _checkConnectivity(self, timer):
+        if self.station.ifconfig()[0] == "0.0.0.0":
+            if self.ap.ifconfig()[0] == "0.0.0.0":
+                self.stationIpAssigned = False
+                self.__startAp()
+        else:
+            if not self.stationIpAssigned:
+                self.stationIpAssigned = True
+                self.blink.fast()
+                print(self.getIp())
+
+            if not self.ap.ifconfig()[0] == "0.0.0.0":
+                self.__stopAp()
 
     def getIp(self):
         ip = self.ap.ifconfig()[0]
@@ -19,20 +38,6 @@ class WifiManager:
             ip = self.station.ifconfig()[0]
 
         return ip
-
-    def checkWifi(self):
-        if self.station.ifconfig()[0] == "0.0.0.0":
-            if self.ap.ifconfig()[0] == "0.0.0.0":
-                self.stationIpRecevied = False
-                self.__startAp()
-        else:
-            if not self.stationIpRecevied:
-                self.stationIpRecevied = True
-                self.blink.fast()
-                print(self.getIp())
-
-            if not self.ap.ifconfig()[0] == "0.0.0.0":
-                self.__stopAp()
 
     def __startAp(self):
         self.ap.active(True)

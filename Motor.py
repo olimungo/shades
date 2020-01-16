@@ -38,6 +38,8 @@ class MotorManager:
     irPower = Pin(Gpio().IR_POWER, Pin.OUT)
     stdbPmwPower = Pin(Gpio().STDBY_PWM_POWER, Pin.OUT)
     irCheckTimer = Timer(-1)
+    disableTimer = Timer(-1)
+    motorCheckTimer = Timer(-1)
 
     def __init__(self):
         motorReversed = settings.readMotorReversed()
@@ -51,11 +53,11 @@ class MotorManager:
         self.stdbPmwPower.off()
         self.irPower.off()
 
-    def __disable(self, timer):
+    def _disable(self, timer):
         self.stdbPmwPower.off()
         self.irPower.off()
 
-    def __stop(self):
+    def _stop(self):
         self.irCheckTimer.deinit()
 
         self.motorState = MotorState().STOPPED
@@ -63,10 +65,9 @@ class MotorManager:
         self.ctl2.on()
 
         # Allow the motor to physically stop before cutting the power
-        timer = Timer(-1)
-        timer.init(period=300, mode=Timer.ONE_SHOT, callback=self.__disable)
+        self.disableTimer.init(period=300, mode=Timer.ONE_SHOT, callback=self._disable)
 
-    def __irCheck(self, timer):
+    def _irCheck(self, timer):
         value = self.irSensor.read()
 
         if value > Gpio().IR_SENSOR_THRESHOLD_HIGH:
@@ -75,12 +76,12 @@ class MotorManager:
             else:
                 self.shadeState = ShadeState().BOTTOM
 
-            self.__stop()
+            self._stop()
 
-    def __motorCheck(self, timer=0):
-        self.irCheckTimer.init(period=50, mode=Timer.PERIODIC, callback=self.__irCheck)
+    def _motorCheck(self, timer=0):
+        self.irCheckTimer.init(period=50, mode=Timer.PERIODIC, callback=self._irCheck)
 
-    def __moveMotor(self, direction):
+    def _moveMotor(self, direction):
         if direction == MotorDirection().CLOCKWISE:
             self.ctl1.on()
             self.ctl2.off()
@@ -92,12 +93,13 @@ class MotorManager:
         self.irPower.on()
 
         if self.shadeState == ShadeState().IN_BETWEEN:
-            self.__motorCheck()
+            self._motorCheck()
         else:
             # If shade was on top or on bottom, delay the IR check
             # to give a bit of time to leave the reflective marker
-            timer = Timer(-1)
-            timer.init(period=500, mode=Timer.ONE_SHOT, callback=self.__motorCheck)
+            self.motorCheckTimer.init(
+                period=500, mode=Timer.ONE_SHOT, callback=self._motorCheck
+            )
 
     def reverseMotor(self):
         motorReversed = settings.readMotorReversed()
@@ -111,16 +113,16 @@ class MotorManager:
 
     def goUp(self):
         if self.shadeState != ShadeState().TOP:
-            self.__moveMotor(MotorDirection().CLOCKWISE)
+            self._moveMotor(MotorDirection().CLOCKWISE)
             self.motorState = MotorState().RUNNING_UP
 
     def goDown(self):
         if self.shadeState != ShadeState().BOTTOM:
-            self.__moveMotor(MotorDirection().COUNTERCLOCKWISE)
+            self._moveMotor(MotorDirection().COUNTERCLOCKWISE)
             self.motorState = MotorState().RUNNING_DOWN
 
     def stop(self):
         if self.motorState != MotorState().STOPPED:
             self.shadeState = ShadeState().IN_BETWEEN
-            self.__stop()
+            self._stop()
 

@@ -13,21 +13,21 @@
         {
             "label": "Upload",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); mpfshell -n -c 'open tty.usbserial-1410; mput ${fileBasename}'",
+            "command": "kill $(pgrep -f mpfshell); mpfshell -n -c 'open tty.usbserial-1430; mput ${fileBasename}'",
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "mpfshell -n -c 'open tty.usbserial-1410; mput .*\\.py; mput index.html'",
+            "command": "mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html'",
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "Setup WebREPL",
             "type": "shell",
-            "command": "mpfshell -n -c 'open tty.usbserial-1410; import webrepl_setup'",
+            "command": "mpfshell -n -c 'open tty.usbserial-1430; import webrepl_setup'",
             "group": "build",
             "problemMatcher": []
         },
@@ -48,21 +48,21 @@
         {
             "label": "Erase flash",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1410 erase_flash",
+            "command": "esptool.py --port /dev/tty.usbserial-1430 erase_flash",
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "Flash ESP with micropython",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1410 --baud 460800 write_flash --flash_size=detect 0 esp8266-20190529-v1.11.bin",
+            "command": "esptool.py --port /dev/tty.usbserial-1430 --baud 460800 write_flash --flash_size=detect 0 esp8266-20190529-v1.11.bin",
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "mpfshell",
             "type": "shell",
-            "command": "mpfshell -c open tty.usbserial-1410",
+            "command": "mpfshell -c open tty.usbserial-1430",
             "group": "build",
             "problemMatcher": []
         }
