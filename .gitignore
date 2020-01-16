@@ -1,2 +1,5 @@
 *.bin
 commands.txt
+down
+stop
+up
