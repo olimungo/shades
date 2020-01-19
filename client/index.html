@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Shade %%NET_ID%%</title>
+
+    <style>
+        html {
+            font-size: 2vw;
+            font-family: sans-serif;
+            font-weight: 100;
+            color: orange;
+            background: #222;
+            margin: 5vw;
+            padding: 2vw;
+            display: flex;
+            justify-content: center;
+        }
+
+        button {
+            border-radius: 7px;
+            background: none;
+            outline: none;
+            border: solid 1px orange;
+            width: 18rem;
+            height: 9rem;
+        }
+
+        button:active {
+            background-color: orange;
+        }
+
+        .hidden {
+            visibility: hidden;
+            position: fixed;
+        }
+
+        .align-horizontal {
+            display: flex;
+            align-items: center;
+        }
+
+        .align-vertical {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .space-between {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .spacer-vertical-small {
+            height: 2rem;
+        }
+
+        .spacer-vertical {
+            height: 3rem;
+        }
+
+        .spacer-vertical-big {
+            height: 4rem;
+        }
+
+        .title {
+            font-size: 4rem;
+        }
+
+        .tag {
+            font-size: 2.5rem;
+            font-weight: 400;
+            width: 3.5rem;
+            height: 3.5rem;
+            background-color: orange;
+            color: #222;
+            border-radius: 50%;
+            margin-left: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ip {
+            padding: 0 .6rem;
+            font-size: 1.5rem;
+            font-weight: 400;
+            background-color: orange;
+            color: #222;
+            border-radius: 2px;
+        }
+
+        .svg {
+            width: 7rem;
+        }
+
+        .svg-clog {
+            width: 6rem;
+        }
+
+        .svg-back {
+            width: 4rem;
+            margin-right: 1rem;
+        }
+
+        .settings {
+            align-items: baseline;
+        }
+
+        .label {
+            font-size: 2.5rem;
+            color: orange;
+        }
+
+        .label-small {
+            font-size: 1.5rem;
+            color: orange;
+        }
+
+        .align-left {
+            align-self: flex-start;
+        }
+
+        input[type='number'],
+        input[type='password'],
+        input[type='text'] {
+            border: solid 1px orange;
+            outline: none;
+            background: none;
+            border-radius: 25px;
+            font-size: 2.3rem;
+            height: 3.5rem;
+            font-weight: 300;
+            padding-left: 2rem;
+            color: orange;
+        }
+
+        input[type='number'] {
+            width: 9rem;
+        }
+
+        input[type='password'],
+        input[type='text'] {
+            width: 39rem;
+        }
+
+        input.switch {
+            position: relative;
+            -webkit-appearance: none;
+            outline: none;
+            width: 11rem;
+            height: 4rem;
+            background-color: orange;
+            border: 1px solid orange;
+            border-radius: 5rem;
+            box-shadow: inset -7rem 0 0 0 #222;
+        }
+
+        input.switch:checked {
+            box-shadow: inset 7rem 0 0 0 #222;
+        }
+
+        .connect-button {
+            width: 41rem;
+            font-size: 3rem;
+            height: 6rem;
+            color: orange;
+        }
+
+        @media screen and (min-width: 640px) {
+            html {
+                font-size: 13px;
+                margin: 30px;
+                padding: 12px;
+            }
+
+            .space-between {
+                width: 535px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main">
+        <div class="title align-horizontal">
+            <div>Shade</div>
+            <div id="tag-net-id" class="tag">%%NET_ID%%</div>
+        </div>
+
+        <div><span class="ip">%%IP%%</span></div>
+
+        <div class="spacer-vertical-big"></div>
+
+        <div class="align-vertical">
+            <button onclick="send('/action/go-up')">
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -1 32 32" xml:space="preserve"
+                    class="svg">
+                    <path d="M18.221,7.206l9.585,9.585c0.879,0.879,0.879,2.317,0,3.195l-0.8,0.801c-0.877,0.878-2.316,0.878-3.194,0 
+                        l-7.315-7.315l-7.315,7.315c-0.878,0.878-2.317,0.878-3.194,0l-0.8-0.801c-0.879-0.878-0.879-2.316,0-3.195l9.587-9.585 
+                        c0.471-0.472,1.103-0.682,1.723-0.647C17.115,6.524,17.748,6.734,18.221,7.206z" fill="#ffa500" />
+                </svg>
+            </button>
+
+            <div class="spacer-vertical"></div>
+
+            <button onclick="send('/action/stop')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -150 1792 2042" class="svg">
+                    <path d="M1216 1184v-576q0-14-9-23t-23-9h-576q-14 0-23 9t-9 23v576q0 14 9 23t23 9h576q14 0 23-9t9-23zm448-288q0 
+                        209-103 385.5t-279.5 279.5-385.5 103-385.5-103-279.5-279.5-103-385.5 
+                        103-385.5 279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z" fill="#ffa500" />
+                </svg>
+            </button>
+
+            <div class="spacer-vertical"></div>
+
+            <button onclick="send('/action/go-down')">
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -1 32 32" xml:space="preserve"
+                    class="svg">
+                    <path d="M14.77,23.795L5.185,14.21c-0.879-0.879-0.879-2.317,0-3.195l0.8-0.801c0.877-0.878,2.316-0.878,3.194,0 
+                        l7.315,7.315l7.316-7.315c0.878-0.878,2.317-0.878,3.194,0l0.8,0.801c0.879,0.878,0.879,2.316,0,3.195l-9.587,9.585 
+                        c-0.471,0.472-1.104,0.682-1.723,0.647C15.875,24.477,15.243,24.267,14.77,23.795z"
+                        fill="#ffa500" />
+                </svg>
+            </button>
+
+            <div class="spacer-vertical-big"></div>
+            <div class="spacer-vertical-big"></div>
+
+            <button onclick="displaySettings()">
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -3 32 37" xml:space="preserve"
+                    class="svg-clog" onclick="displaySettings()">
+                    <path d="M32,17.969v-4l-4.781-1.992c-0.133-0.375-0.273-0.738-0.445-1.094l1.93-4.805L25.875,3.25 
+                        l-4.762,1.961c-0.363-0.176-0.734-0.324-1.117-0.461L17.969,0h-4l-1.977,4.734c-0.398,0.141-0.781,0.289-1.16,0.469l-4.754-1.91 
+                        L3.25,6.121l1.938,4.711C5,11.219,4.848,11.613,4.703,12.02L0,14.031v4l4.707,1.961c0.145,0.406,0.301,0.801,0.488,1.188 
+                        l-1.902,4.742l2.828,2.828l4.723-1.945c0.379,0.18,0.766,0.324,1.164,0.461L14.031,32h4l1.98-4.758 
+                        c0.379-0.141,0.754-0.289,1.113-0.461l4.797,1.922l2.828-2.828l-1.969-4.773c0.168-0.359,0.305-0.723,0.438-1.094L32,17.969z 
+                        M15.969,22c-3.312,0-6-2.688-6-6s2.688-6,6-6s6,2.688,6,6S19.281,22,15.969,22z" fill="#ffa500" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="hidden" id="settings">
+        <div class="title align-horizontal settings">
+            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -6 32 32" xml:space="preserve"
+                class="svg-back" onclick="displayMain()">
+                <path d="M28,14H8.8l4.62-4.62C13.814,8.986,14,8.516,14,8c0-0.984-0.813-2-2-2c-0.531,0-0.994,0.193-1.38,0.58l-7.958,7.958 
+                    C2.334,14.866,2,15.271,2,16s0.279,1.08,0.646,1.447l7.974,7.973C11.006,25.807,11.469,26,12,26c1.188,0,2-1.016,2-2 
+                    c0-0.516-0.186-0.986-0.58-1.38L8.8,18H28c1.104,0,2-0.896,2-2S29.104,14,28,14z" fill="#ffa500" />
+            </svg>
+            <div>Settings</div>
+        </div>
+
+        <div class="spacer-vertical-big"></div>
+
+        <div class="align-vertical">
+            <div class="align-horizontal space-between">
+                <div class="label">
+                    Shade number
+                </div>
+
+                <input id="netId" type="number" value="%%NET_ID%%" onkeypress="if(this.value.length > 0) return false;"
+                    oninput="if(this.value.length > 1) return false; else setNetId(this.value)" />
+            </div>
+
+            <div class="spacer-vertical-small"></div>
+
+            <div class="align-horizontal space-between">
+                <div class="label">
+                    Motor reversed
+                </div>
+
+                <input class="switch" type="checkbox" %%MOTOR_REVERSED%% onclick="send('/settings/reverse-motor')" />
+            </div>
+
+            <div class="spacer-vertical-small"></div>
+
+            <div class="label align-left">Group</div>
+
+            <input id="group" type="text" value="%%GROUP%%" oninput="send('/settings/group?name=' + this.value)" />
+
+            <div class="spacer-vertical-small"></div>
+
+            <div class="label align-left">SSID</div>
+
+            <input id="essid" type="text" value="%%ESSID%%" />
+
+            <div class="spacer-vertical-small"></div>
+
+            <div class="label align-left">Password</div>
+
+            <input id="pwd" type="password" />
+
+            <div class="spacer-vertical-small"></div>
+
+            <button class="connect-button" onclick="connect()">CONNECT</button>
+        </div>
+    </div>
+
+    <script>
+        function send(action) {
+            const http = new XMLHttpRequest();
+            http.open('GET', action); http.send();
+
+            return http;
+        }
+
+        function setNetId(value) {
+            send('/settings/set-net?id=' + value);
+            const tag = document.getElementById('tag-net-id');
+            tag.textContent = value;
+        }
+
+        function displayMain() {
+            const main = document.getElementById('main'), settings = document.getElementById('settings');
+            main.classList.remove('hidden');
+            settings.classList.add('hidden');
+        }
+
+        function displaySettings() {
+            const main = document.getElementById('main'), settings = document.getElementById('settings');
+            main.classList.add('hidden');
+            settings.classList.remove('hidden');
+        }
+
+        function connect() {
+            const essid = document.getElementById('essid');
+            const pwd = document.getElementById('pwd');
+
+            send('/settings/connect?essid=' + essid.value + '&pwd=' + pwd.value);
+        }
+    </script>
+</body>
+
+</html>

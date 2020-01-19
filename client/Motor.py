@@ -12,21 +12,25 @@ class Gpio:
 
 
 class MotorDirection:
-    CLOCKWISE = 1
-    COUNTERCLOCKWISE = 2
+    CLOCKWISE = 0
+    COUNTERCLOCKWISE = 1
 
 
 class MotorState:
-    RUNNING_UP = 1
-    RUNNING_DOWN = 2
-    STOPPED = 3
+    RUNNING_UP = 0
+    RUNNING_DOWN = 1
+    STOPPED = 2
+
+    STATE_TEXT = ["RUNNING UP", "RUNNING DOWN", "STOPPED"]
 
 
 class ShadeState:
-    TOP = 1
-    BOTTOM = 2
-    IN_BETWEEN = 3
-    UNKNOWN = 4
+    TOP = 0
+    BOTTOM = 1
+    IN_BETWEEN = 2
+    UNKNOWN = 3
+
+    STATE_TEXT = ["TOP", "BOTTOM", "IN BETWEEN", "UNKNOWN"]
 
 
 class MotorManager:
@@ -125,4 +129,12 @@ class MotorManager:
         if self.motorState != MotorState().STOPPED:
             self.shadeState = ShadeState().IN_BETWEEN
             self._stop()
+
+    def getStatus(self):
+        if self.motorState != MotorState().STOPPED:
+            status = MotorState().STATE_TEXT[self.motorState]
+        else:
+            status = ShadeState().STATE_TEXT[self.shadeState]
+
+        return status
 

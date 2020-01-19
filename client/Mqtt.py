@@ -14,14 +14,20 @@ class MqttManager:
     wifiConnected = False
     mqttConnected = False
 
-    def __init__(self, mqttServerIp, netId):
+    def __init__(self, netId):
         self.netId = netId
-        self.mqtt = MQTTClient(self.clientId, mqttServerIp)
+        brokerIp = self._getBrokerIp()
+
+        self.mqtt = MQTTClient(self.clientId, brokerIp)
         self.mqtt.set_callback(self._messageReceived)
 
         self.checkConnectivityTimer.init(
             period=1000, mode=Timer.PERIODIC, callback=self._checkConnectivity
         )
+
+    def _getBrokerIp(sel):
+        file = open("broker.txt", "r")
+        return file.read()
 
     def _checkConnectivity(self, timer):
         if self.station.isconnected():
@@ -39,10 +45,10 @@ class MqttManager:
     def _connectToBroker(self):
         try:
             self.mqtt.connect()
-            self.mqtt.subscribe("shade/commands/{}".format(self.netId))
+            self.mqtt.subscribe("shades/commands/{}".format(self.netId))
 
             self.checkMessageTimer.init(
-                period=500, mode=Timer.PERIODIC, callback=self._checkMessage
+                period=100, mode=Timer.PERIODIC, callback=self._checkMessage
             )
 
             self.mqttConnected = True
@@ -66,6 +72,6 @@ class MqttManager:
 
         return message
 
-    def sendMessage(self, msg):
-        self.mqtt.publish("shade/messages/{}".format(self.netId), msg)
+    def sendStatus(self, message):
+        self.mqtt.publish("shades/states/{}".format(self.netId), message)
 

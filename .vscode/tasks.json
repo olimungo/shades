@@ -4,47 +4,19 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Kill Terminal",
-            "type": "shell",
-            "command": "kill $(pgrep -f mpfshell)",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
             "label": "Upload",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); mpfshell -n -c 'open tty.usbserial-1430; mput ${fileBasename}'",
+            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -n -c 'open tty.usbserial-1430; mput ${fileBasename}'",
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html'",
+            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html'",
             "group": "build",
             "problemMatcher": []
         },
-        {
-            "label": "Setup WebREPL",
-            "type": "shell",
-            "command": "mpfshell -n -c 'open tty.usbserial-1430; import webrepl_setup'",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "Upload and Terminal",
-            "type": "shell",
-            "command": "ampy put ${fileBasename};nodemcu-tool terminal",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "Run",
-            "type": "shell",
-            "command": "ampy run ${fileBasename}",
-            "group": "build",
-            "problemMatcher": []
-        }
         {
             "label": "Erase flash",
             "type": "shell",
@@ -60,11 +32,14 @@
             "problemMatcher": []
         },
         {
-            "label": "mpfshell",
+            "label": "Shell and REPL",
             "type": "shell",
-            "command": "mpfshell -c open tty.usbserial-1430",
+            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -c open tty.usbserial-1430",
             "group": "build",
-            "problemMatcher": []
+            "problemMatcher": [],
+            "presentation": {
+                "focus": true
+            }
         }
     ]
 }

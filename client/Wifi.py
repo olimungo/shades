@@ -1,5 +1,6 @@
 import network
 import settings
+
 import Blink
 from machine import Timer
 
@@ -29,6 +30,7 @@ class WifiManager:
                 print(self.getIp())
 
             if not self.ap.ifconfig()[0] == "0.0.0.0":
+
                 self.__stopAp()
 
     def getIp(self):

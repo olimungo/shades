@@ -28,7 +28,7 @@ class WebServer:
         )
         client.close()
 
-    def index(self, client, ip, netId, essid, motorReversed):
+    def index(self, client, ip, netId, essid, motorReversed, group):
         print("> Send index page")
 
         file = open("index.html", "r")
@@ -42,6 +42,7 @@ class WebServer:
             data = data.replace("%%IP%%", ip)
             data = data.replace("%%NET_ID%%", netId)
             data = data.replace("%%ESSID%%", essid)
+            data = data.replace("%%GROUP%%", group)
 
             if motorReversed == "1":
                 checked = "CHECKED"
