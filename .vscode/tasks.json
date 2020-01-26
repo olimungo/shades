@@ -13,7 +13,7 @@
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html'",
+            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html; mput broker.txt; rm settings.txt'",
             "group": "build",
             "problemMatcher": []
         },

@@ -11,7 +11,7 @@ from Mqtt import MqttManager
 webServer = WebServer()
 wifiManager = WifiManager()
 motorManager = MotorManager()
-mqttManager = MqttManager(2)
+mqttManager = MqttManager(settings.readNetId())
 
 
 def handleWebRequest(client, path, queryStringsArray):
