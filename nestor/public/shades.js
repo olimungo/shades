@@ -20,10 +20,8 @@ let socket;
 
     socket.on('update', payload => {
         shades = payload.shades;
-    });
 
-    // Check for devices/groups to add or to remove
-    setInterval(() => {
+        // Check for devices/groups to add or to remove
         // Create a copy in case the array gets updated while we work on it
         shadesCopy = [...shades];
 
@@ -31,7 +29,7 @@ let socket;
         addShadeElements(shadesCopy);
 
         updateGroups();
-    }, 1000);
+    });
 })();
 
 customElements.define(
@@ -110,6 +108,7 @@ customElements.define(
 
         set selected(value) {
             this._selected = value;
+
             const box = this.shadowRoot.getElementById('box');
 
             if (value) {
@@ -122,6 +121,7 @@ customElements.define(
         clicked() {
             const box = this.shadowRoot.getElementById('box');
             box.classList.toggle('selected');
+            this._selected = !this._selected;
         }
 
         runningUp() {
@@ -282,9 +282,9 @@ function setGroup(shadeElement, group) {
 function updateGroups() {
     const now = new Date().getTime();
 
-    // Remove groups that weren't updated since 5 seconds
+    // Remove groups that weren't updated since 3 seconds
     groups = groups.filter(
-        item => item.date == -1 || now - item.date.getTime() < 5000
+        item => item.date == -1 || now - item.date.getTime() < 3000
     );
 
     // Clean the groups DIV in the DOM

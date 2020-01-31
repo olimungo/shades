@@ -5,15 +5,13 @@
     "author": "Olivier Mungo <olivier@mungo.eu>",
     "main": "server.js",
     "scripts": {
-        "start": "nodemon server.js"
+        "start": "nodemon -L server.js"
     },
     "dependencies": {
         "express": "^4.17.1",
         "express-tl": "^1.0.2",
         "mqtt": "^3.0.0",
+        "nodemon": "^2.0.2",
         "socket.io": "^2.3.0"
-    },
-    "devDependencies": {
-        "nodemon": "^2.0.2"
     }
 }

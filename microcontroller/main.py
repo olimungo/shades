@@ -1,5 +1,5 @@
 import time
-from machine import Timer, reset, unique_id
+from machine import Timer
 
 from Web import WebServer
 from Wifi import WifiManager
@@ -7,6 +7,7 @@ from Motor import MotorManager
 import settings
 
 from Mqtt import MqttManager
+from slimDNS import SlimDNSServer
 
 webServer = WebServer()
 wifiManager = WifiManager()
@@ -113,3 +114,19 @@ timerMqtt.init(period=100, mode=Timer.PERIODIC, callback=handleMqtt)
 
 timerStatus = Timer(-1)
 timerStatus.init(period=3000, mode=Timer.PERIODIC, callback=sendStatus)
+
+netId = settings.readNetId()
+slimDns = SlimDNSServer("shade-{}".format(netId))
+
+
+def test(timer=None):
+    try:
+        print("111")
+        nestorIp = slimDns.resolve_mdns_address("nestor.local")
+        print(nestorIp)
+    except Exception as e:
+        print("> Test exception: {}".format(e))
+
+
+timerTest = Timer(-1)
+timerTest.init(period=4000, mode=Timer.ONE_SHOT, callback=test)

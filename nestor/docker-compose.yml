@@ -1,11 +1,14 @@
 version: '3'
 services:
     node:
-        image: 'node:10'
+        image: olimungo/nestor
+        container_name: nestor
+        build: .
         user: 'node'
         working_dir: /home/node/app
         environment:
             - NODE_ENV=production
+            - HOST_IP=__HOST_IP__
         volumes:
             - ./:/home/node/app
         expose:

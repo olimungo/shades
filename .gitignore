@@ -1,6 +1,3 @@
 *.bin
 commands.txt
-down
-stop
-up
-broker/node_modules
+nestor/node_modules

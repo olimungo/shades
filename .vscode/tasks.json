@@ -6,14 +6,21 @@
         {
             "label": "Upload",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -n -c 'open tty.usbserial-1430; mput ${fileBasename}'",
+            "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1430; mput ${fileBasename}'",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Test",
+            "type": "shell",
+            "command": "echo ${fileDirname}",
             "group": "build",
             "problemMatcher": []
         },
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html; mput broker.txt; rm settings.txt'",
+            "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html; mput broker.txt'",
             "group": "build",
             "problemMatcher": []
         },
@@ -32,9 +39,16 @@
             "problemMatcher": []
         },
         {
+            "label": "Flash ESP with custom micropython",
+            "type": "shell",
+            "command": "esptool.py --port /dev/tty.usbserial-1430 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
             "label": "Shell and REPL",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); cd client; mpfshell -c open tty.usbserial-1430",
+            "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -c open tty.usbserial-1430",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
