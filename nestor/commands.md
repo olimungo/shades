@@ -2,6 +2,12 @@
 
 ## Development
 
+### Build image
+
+```bash
+docker-compose build
+```
+
 ### Run container on development host and inject the host IP address (macOS)
 
 ```bash
@@ -31,6 +37,8 @@ docker buildx build --platform linux/arm/v7 -t olimungo/nestor:1.x --push .
 
 #### Download and run container on Pi and inject the host IP address
 
+Make sure that a file log.txt exists locally on the Pi (touch log.txt). Otherwise the command below will create a directory and will throw an error.
+
 ```bash
-docker run -e "HOST_IP=$(ip -4 addr show eth0 | grep -Po 'inet \K[\d.]+')" -p 80:8081 -d --name=nestor olimungo/nestor:1.x
+docker run -e "HOST_IP=$(ip -4 addr show eth0 | grep -Po 'inet \K[\d.]+')" -p 80:8081 -v ~/log.txt:/home/node/app/log.txt -d --name=nestor olimungo/nestor:1.x
 ```

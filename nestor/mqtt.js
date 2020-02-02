@@ -1,4 +1,5 @@
 const mqtt = require('mqtt');
+const log = require('./logger').log;
 
 const BROKER = 'mqtt://192.168.0.167';
 let client;
@@ -38,27 +39,32 @@ function gotMessage(topic, message) {
 
     if (topic.indexOf('shades/states/') > -1) {
         netId = parseInt(topic.split('shades/states/')[1]);
-        jsonMessage = JSON.parse(message.toString());
 
-        states = states.filter(item => item.netId != netId);
-        states.push({
-            netId,
-            group: jsonMessage.group,
-            state: jsonMessage.state,
-            date: new Date()
-        });
+        try {
+            jsonMessage = JSON.parse(message.toString());
 
-        states = states.sort((a, b) => (a.netId < b.netId ? -1 : 1));
+            states = states.filter(item => item.netId != netId);
+            states.push({
+                netId,
+                group: jsonMessage.group,
+                state: jsonMessage.state,
+                date: new Date()
+            });
 
-        callbackMessageReceived(
-            'states',
-            topic,
-            message,
-            states.map(item => ({
-                netId: item.netId,
-                group: item.group,
-                state: item.state
-            }))
-        );
+            states = states.sort((a, b) => (a.netId < b.netId ? -1 : 1));
+
+            callbackMessageReceived(
+                'states',
+                topic,
+                message,
+                states.map(item => ({
+                    netId: item.netId,
+                    group: item.group,
+                    state: item.state
+                }))
+            );
+        } catch (error) {
+            log(`ERROR in mqtt.gotMessage: ${error}|${message.toString()}`);
+        }
     }
 }

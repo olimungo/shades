@@ -29,7 +29,7 @@ dnsServer = SlimDNSServer()
 
 checkWifiConnectionTimer = Timer(-1)
 processTimer = Timer(-1)
-sendStateTimer = Timer(-1)
+sendMqttStateTimer = Timer(-1)
 
 
 def handleWebRequest(client, path, queryStringsArray):
@@ -42,19 +42,19 @@ def handleWebRequest(client, path, queryStringsArray):
         print(path)
         motorManager.goUp()
         webServer.ok(client)
-        sendState()
+        sendMqttState()
 
         netId = settings.readNetId()
     elif path == "/action/go-down":
         print(path)
         motorManager.goDown()
         webServer.ok(client)
-        sendState()
+        sendMqttState()
     elif path == "/action/stop":
         print(path)
         motorManager.stop()
         webServer.ok(client)
-        sendState()
+        sendMqttState()
     elif path == "/settings/set-net":
         if len(queryStringsArray) > 0 and not queryStringsArray["id"] == "":
             settings.writeNetId(queryStringsArray["id"])
@@ -95,36 +95,36 @@ def handleWeb():
         print("> handleWeb exception: {}".format(e))
 
 
-def handleMqtt():
+def checkForMqttMessage():
     try:
         message = mqttManager.checkMessage()
 
         if message == "up":
-            print("up")
             motorManager.goUp()
-            sendState()
+            sendMqttState()
         elif message == "down":
             motorManager.goDown()
-            sendState()
+            sendMqttState()
         elif message == "stop":
-            print("stop")
             motorManager.stop()
-            sendState()
+            sendMqttState()
     except Exception as e:
-        print("> handleMqtt exception: {}".format(e))
+        print("> checkForMqttMessage exception: {}".format(e))
 
 
-def sendState(timer=None):
+def sendMqttState(timer=None):
     try:
         if wifiManager.stationReady:
             group = settings.readGroup()
             motorStatus = motorManager.getStatus()
 
-            status = "{" + '"group": {}, "state": {}'.format(group, motorStatus) + "}"
+            status = (
+                "{" + '"group": "{}", "state": "{}"'.format(group, motorStatus) + "}"
+            )
 
             mqttManager.sendState(status)
     except Exception as e:
-        print("> sendState exception: {}".format(e))
+        print("> sendMqttState exception: {}".format(e))
 
 
 def process(timer):
@@ -132,7 +132,7 @@ def process(timer):
         handleWeb()
 
     if wifiManager.stationReady:
-        handleMqtt()
+        checkForMqttMessage()
         dnsServer.processPackets()
 
 
@@ -146,6 +146,7 @@ def checkWifiConnection(timer):
 
                 nestorIp = dnsServer.resolve_mdns_address("nestor.local")
                 nestorIp = "{}.{}.{}.{}".format(*nestorIp)
+
                 mqttManager.connect(nestorIp, netId)
 
                 wifiManager.stationReady = True
@@ -163,4 +164,4 @@ checkWifiConnectionTimer.init(
     period=1000, mode=Timer.PERIODIC, callback=checkWifiConnection
 )
 
-sendStateTimer.init(period=1000, mode=Timer.PERIODIC, callback=sendState)
+sendMqttStateTimer.init(period=1000, mode=Timer.PERIODIC, callback=sendMqttState)

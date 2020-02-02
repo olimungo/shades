@@ -12,7 +12,7 @@ exports.log = message => {
 function getDateAndTime() {
     now = new Date();
 
-    day = now.getDay();
+    day = now.getDate();
     month = now.getMonth() + 1;
     year = now.getFullYear();
     hours = now.getHours();

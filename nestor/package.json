@@ -5,7 +5,8 @@
     "author": "Olivier Mungo <olivier@mungo.eu>",
     "main": "server.js",
     "scripts": {
-        "start": "nodemon -L server.js"
+        "start": "nodemon server.js",
+        "start:dev": "nodemon -L server.js"
     },
     "dependencies": {
         "express": "^4.17.1",
