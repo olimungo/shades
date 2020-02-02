@@ -1,58 +1,61 @@
 import network
-import settings
-
-import Blink
 from machine import Timer
 
 
 class WifiManager:
     station = network.WLAN(network.STA_IF)
     ap = network.WLAN(network.AP_IF)
-    stationIpAssigned = False
-    blink = Blink.Blink()
-    checkConnectivityTimer = Timer(-1)
+    stationReady = False
 
-    def __init__(self):
+    waitForAutoConnectionTimer = Timer(-1)
+    checkStationConnectionTimer = Timer(-1)
+
+    def __init__(self, essid):
+        self.essid = essid
         self.station.active(True)
-        self.checkConnectivityTimer.init(
-            period=5000, mode=Timer.PERIODIC, callback=self._checkConnectivity
+        self.ap.active(False)
+
+        self.waitForAutoConnectionTimer.init(
+            period=5000, mode=Timer.ONE_SHOT, callback=self._waitForAutoConnection
         )
 
-    def _checkConnectivity(self, timer):
-        if self.station.ifconfig()[0] == "0.0.0.0":
-            if self.ap.ifconfig()[0] == "0.0.0.0":
-                self.stationIpAssigned = False
-                self.__startAp()
+    def _waitForAutoConnection(self, timer):
+        if not self.station.isconnected():
+            self._startAp()
+
+        self.checkStationConnectionTimer.init(
+            period=1000, mode=Timer.PERIODIC, callback=self._checkStationConnection
+        )
+
+    def _checkStationConnection(self, timer):
+        if not self.station.isconnected():
+            if not self.ap.isconnected():
+                self._startAp()
+                self.stationReady = False
         else:
-            if not self.stationIpAssigned:
-                self.stationIpAssigned = True
-                self.blink.fast()
-                print(self.getIp())
+            if self.ap.isconnected():
+                self._stopAp()
 
-            if not self.ap.ifconfig()[0] == "0.0.0.0":
+        self.checkStationConnectionTimer.init(
+            period=5000, mode=Timer.PERIODIC, callback=self._checkStationConnection
+        )
 
-                self.__stopAp()
+    def _startAp(self):
+        print("> No AP found... starting own AP: " + self.essid)
+        self.ap.active(True)
+        self.ap.config(essid=self.essid, authmode=network.AUTH_OPEN)
+
+    def _stopAp(self):
+        print("> AP available, shutting down own AP")
+        self.ap.active(False)
 
     def getIp(self):
         ip = self.ap.ifconfig()[0]
 
-        if not self.station.ifconfig()[0] == "0.0.0.0":
+        if self.station.isconnected():
             ip = self.station.ifconfig()[0]
 
         return ip
-
-    def __startAp(self):
-        self.ap.active(True)
-        netId = settings.readNetId()
-        essid = "Shade-" + str(netId)
-
-        print("> No AP found... starting own AP: " + essid)
-
-        self.ap.config(essid=essid, authmode=network.AUTH_OPEN)
-
-    def __stopAp(self):
-        print("> AP available, shutting down own AP")
-        self.ap.active(False)
 
     def connect(self, essid, pwd):
         print("> Trying to connect to " + essid)

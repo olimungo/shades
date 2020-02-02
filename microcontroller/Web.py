@@ -86,13 +86,7 @@ class WebServer:
 
         if request:
             client, addr = self.webServer.accept()
-
-            # print('> Got a connection from: ' + str(addr))
-
             request = client.recv(4096)
-
-            # print('> Content:' + str(request))
-
             path, queryStringsArray = self.splitRequest(request)
 
             return False, client, path, queryStringsArray

@@ -57,6 +57,6 @@ RUN cd /micropython/ports/unix && make axtls && make
 RUN cd /micropython && make -C mpy-cross/ V=1
 
 RUN mkdir /micropython/ports/esp8266/modules/umqtt
-ADD umqtt.simple.py /micropython/ports/esp8266/umqtt/simple.py
+ADD umqtt.simple.py /micropython/ports/esp8266/modules/umqtt/simple.py
 
 ADD slimDNS.py /micropython/ports/esp8266/modules/

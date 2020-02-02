@@ -8,7 +8,10 @@
             "type": "shell",
             "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1430; mput ${fileBasename}'",
             "group": "build",
-            "problemMatcher": []
+            "problemMatcher": [],
+            "presentation": {
+                "focus": true
+            }
         },
         {
             "label": "Test",
@@ -20,7 +23,7 @@
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html; mput broker.txt'",
+            "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html'",
             "group": "build",
             "problemMatcher": []
         },

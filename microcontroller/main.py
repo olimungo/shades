@@ -1,18 +1,35 @@
-import time
 from machine import Timer
+import network
 
 from Web import WebServer
 from Wifi import WifiManager
 from Motor import MotorManager
 import settings
-
+from Blink import Blink
 from Mqtt import MqttManager
 from slimDNS import SlimDNSServer
 
+PUBLIC_NAME = "shade"
+BROKER_TOPIC_NAME = "shades"
+MQTT_BROKER_NAME = "nestor.local"
+
+netId = settings.readNetId()
+station = network.WLAN(network.STA_IF)
+ap = network.WLAN(network.AP_IF)
+
 webServer = WebServer()
-wifiManager = WifiManager()
+wifiManager = WifiManager("{}-{}".format(PUBLIC_NAME, netId))
 motorManager = MotorManager()
-mqttManager = MqttManager(settings.readNetId())
+mqttManager = MqttManager(
+    "{}/commands".format(BROKER_TOPIC_NAME),
+    "{}/states".format(BROKER_TOPIC_NAME),
+    "logs/{}".format(BROKER_TOPIC_NAME),
+)
+dnsServer = SlimDNSServer()
+
+checkWifiConnectionTimer = Timer(-1)
+processTimer = Timer(-1)
+sendStateTimer = Timer(-1)
 
 
 def handleWebRequest(client, path, queryStringsArray):
@@ -25,19 +42,19 @@ def handleWebRequest(client, path, queryStringsArray):
         print(path)
         motorManager.goUp()
         webServer.ok(client)
-        sendStatus()
+        sendState()
 
         netId = settings.readNetId()
     elif path == "/action/go-down":
         print(path)
         motorManager.goDown()
         webServer.ok(client)
-        sendStatus()
+        sendState()
     elif path == "/action/stop":
         print(path)
         motorManager.stop()
         webServer.ok(client)
-        sendStatus()
+        sendState()
     elif path == "/settings/set-net":
         if len(queryStringsArray) > 0 and not queryStringsArray["id"] == "":
             settings.writeNetId(queryStringsArray["id"])
@@ -68,65 +85,82 @@ def handleWebRequest(client, path, queryStringsArray):
         webServer.notFound(client)
 
 
-def handleWeb(timer):
+def handleWeb():
     try:
         emptyRequest, client, path, queryStringsArray = webServer.handleRequest()
 
         if not emptyRequest:
             handleWebRequest(client, path, queryStringsArray)
     except Exception as e:
-        print("> Web exception: {}".format(e))
+        print("> handleWeb exception: {}".format(e))
 
 
-def handleMqtt(timer):
+def handleMqtt():
     try:
         message = mqttManager.checkMessage()
 
         if message == "up":
+            print("up")
             motorManager.goUp()
-            sendStatus()
+            sendState()
         elif message == "down":
             motorManager.goDown()
-            sendStatus()
+            sendState()
         elif message == "stop":
+            print("stop")
             motorManager.stop()
-            sendStatus()
+            sendState()
     except Exception as e:
-        print("> Mqtt exception: {}".format(e))
+        print("> handleMqtt exception: {}".format(e))
 
 
-def sendStatus(timer=None):
+def sendState(timer=None):
     try:
-        group = settings.readGroup()
-        motorStatus = motorManager.getStatus()
+        if wifiManager.stationReady:
+            group = settings.readGroup()
+            motorStatus = motorManager.getStatus()
 
-        status = "{" + '"group": "' + group + '", "state": "' + motorStatus + '"' + "}"
-        mqttManager.sendStatus(status)
+            status = "{" + '"group": {}, "state": {}'.format(group, motorStatus) + "}"
+
+            mqttManager.sendState(status)
     except Exception as e:
-        print("> Mqtt send status exception: {}".format(e))
+        print("> sendState exception: {}".format(e))
 
 
-timerWeb = Timer(-1)
-timerWeb.init(period=100, mode=Timer.PERIODIC, callback=handleWeb)
+def process(timer):
+    if station.isconnected() or ap.isconnected():
+        handleWeb()
 
-timerMqtt = Timer(-1)
-timerMqtt.init(period=100, mode=Timer.PERIODIC, callback=handleMqtt)
-
-timerStatus = Timer(-1)
-timerStatus.init(period=3000, mode=Timer.PERIODIC, callback=sendStatus)
-
-netId = settings.readNetId()
-slimDns = SlimDNSServer("shade-{}".format(netId))
+    if wifiManager.stationReady:
+        handleMqtt()
+        dnsServer.processPackets()
 
 
-def test(timer=None):
+def checkWifiConnection(timer):
     try:
-        print("111")
-        nestorIp = slimDns.resolve_mdns_address("nestor.local")
-        print(nestorIp)
+        if station.isconnected():
+            if not wifiManager.stationReady:
+                localIp = station.ifconfig()[0]
+
+                dnsServer.connect(localIp, "{}-{}".format(PUBLIC_NAME, netId))
+
+                nestorIp = dnsServer.resolve_mdns_address("nestor.local")
+                nestorIp = "{}.{}.{}.{}".format(*nestorIp)
+                mqttManager.connect(nestorIp, netId)
+
+                wifiManager.stationReady = True
+
+                mqttManager.sendLog("IP assigned: {}".format(localIp))
+
+                Blink().fast()
     except Exception as e:
-        print("> Test exception: {}".format(e))
+        print("> checkWifiConnection exception: {}".format(e))
 
 
-timerTest = Timer(-1)
-timerTest.init(period=4000, mode=Timer.ONE_SHOT, callback=test)
+processTimer.init(period=500, mode=Timer.PERIODIC, callback=process)
+
+checkWifiConnectionTimer.init(
+    period=1000, mode=Timer.PERIODIC, callback=checkWifiConnection
+)
+
+sendStateTimer.init(period=1000, mode=Timer.PERIODIC, callback=sendState)
