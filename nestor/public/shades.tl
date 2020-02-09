@@ -6,23 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-    <title>Nestor</title>
+    <title>nestor</title>
 
     <link rel="stylesheet" type="text/css" href="shades.css">
-    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
     <div id="main">
         <div class="title align-horizontal">
-            <div>Nestor</div>
+            <div>nestor<span class="category">| shades</span></div>
         </div>
 
         <div><span class="ip">${d.ip}</span></div>
-        <div class="category align-horizontal">
-            <div>SHADES</div>
-        </div>
 
         <div class="vertical-spacer-big"></div>
 
@@ -71,17 +68,18 @@
     <template id="group-button">
         <style>
             .box {
-                font-size: 1.5rem;
                 color: orange;
                 border: solid 1px orange;
                 padding: .5rem;
                 border-radius: .5rem;
                 margin: .5rem;
-                padding: 1rem 1rem;
+                padding: 1.5rem 2rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
+                font-weight: 600;
+                font-size: 2.5rem;
             }
         </style>
 
@@ -104,11 +102,13 @@
                 padding: 1rem;
                 border-radius: .5rem;
                 margin: .5rem;
-                width: 2.5rem;
-                height: 2.5rem;
+                width: 3.5rem;
+                height: 3.5rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                font-weight: 600;
+                font-size: 2.5rem;
             }
 
             .border {
@@ -133,6 +133,7 @@
         </div>
     </template>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script src="shades.js"></script>
 </body>
 

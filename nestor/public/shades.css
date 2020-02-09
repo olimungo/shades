@@ -1,6 +1,6 @@
 html {
+    font-family: 'Roboto', sans-serif;
     font-size: 2vw;
-    font-family: sans-serif;
     font-weight: 100;
     color: orange;
     background: #222;
@@ -9,12 +9,16 @@ html {
     justify-content: center;
 }
 
+body {
+    width: 40rem;
+}
+
 button {
     border-radius: 7px;
     background: none;
     outline: none;
     border: solid 1px orange;
-    width: 18rem;
+    width: 16rem;
     height: 9rem;
 }
 
@@ -52,16 +56,18 @@ button:active {
 }
 
 .vertical-spacer-big {
-    height: 7rem;
+    height: 8rem;
 }
 
 .title {
-    font-size: 4rem;
+    font-size: 5rem;
 }
 
 .category {
-    font-size: 2rem;
-    margin-top: 1rem;
+    font-size: 2.5rem;
+    margin: 1rem 0 0 2rem;
+    vertical-align: middle;
+    color: #b87c0b;
 }
 
 .tag {
@@ -80,8 +86,8 @@ button:active {
 
 .ip {
     padding: 0 0.6rem;
-    font-size: 1.5rem;
-    font-weight: 400;
+    font-size: 2rem;
+    font-weight: 600;
     background-color: orange;
     color: #222;
     border-radius: 2px;
@@ -98,12 +104,13 @@ button:active {
 .shades,
 .groups {
     display: flex;
+    overflow: auto;
 }
 
-@media screen and (min-width: 640px) {
+@media screen and (min-width: 550px) {
     html {
-        font-size: 13px;
-        margin: 10px;
+        font-size: 11px;
+        margin: 9px;
     }
 
     .space-between {

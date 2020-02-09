@@ -8,16 +8,17 @@
 docker-compose build
 ```
 
-### Run container on development host and inject the host IP address (macOS)
+### Run container on development host and inject the host IP address (MacOS)
 
 ```bash
-sed -e "s/__HOST_IP__/$(ipconfig getifaddr en1)/g" docker-compose.yml | docker-compose --file - up -d
+sed -e "s/__HOST_IP__/$(ipconfig getifaddr en1)/g" docker-compose.yml \
+    | docker-compose --file - up -d
 ```
 
 ### Open a shell in the container
 
 ```bash
-docker exec -it nestor /bin/bash -l
+docker exec -it nestor /bin/sh -l
 ```
 
 ## Build for Raspberry Pi
@@ -32,13 +33,18 @@ docker buildx use nestor-builder
 #### Build and push to Docker Hub
 
 ```bash
-docker buildx build --platform linux/arm/v7 -t olimungo/nestor:1.x --push .
+docker buildx build --platform linux/arm/v7 -t olimungo/nestor:alpine-1.x --push .
 ```
 
 #### Download and run container on Pi and inject the host IP address
 
-Make sure that a file log.txt exists locally on the Pi (touch log.txt). Otherwise the command below will create a directory and will throw an error.
+> :exclamation: Make sure that a file log.txt exists locally on the Pi (touch log.txt). Otherwise the command below will create a directory and will throw an error.
 
 ```bash
-docker run -e "HOST_IP=$(ip -4 addr show eth0 | grep -Po 'inet \K[\d.]+')" -p 80:8081 -v ~/log.txt:/home/node/app/log.txt -d --name=nestor olimungo/nestor:1.x
+docker run \
+    -e "HOST_IP=$(ip -4 addr show eth0 | grep -Po 'inet \K[\d.]+')" \
+    -p 80:8081 \
+    -v ~/log.txt:/home/node/app/log.txt -d \
+    --name=nestor \
+    olimungo/nestor:alpine-1.x
 ```

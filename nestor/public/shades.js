@@ -65,8 +65,8 @@ customElements.define(
     class extends HTMLElement {
         constructor() {
             super();
-            let template = document.getElementById('shade-button');
-            let templateContent = template.content;
+            const template = document.getElementById('shade-button');
+            const templateContent = template.content;
 
             this.addEventListener('click', this.clicked);
 
@@ -178,6 +178,7 @@ customElements.define(
 
 // Select the devices belonging to the group that was just selected
 function groupClick(event) {
+    console.log('click');
     const label = event.srcElement.label;
 
     if (label == 'All') {
@@ -270,12 +271,14 @@ function setState(shadeElement, state) {
 function setGroup(shadeElement, group) {
     shadeElement.group = group;
 
-    filtered = groups.filter(item => item.label == group);
+    if (group != '') {
+        filtered = groups.filter(item => item.label == group);
 
-    if (filtered.length == 0) {
-        groups.push({ label: group, date: new Date() });
-    } else {
-        filtered[0].date = new Date();
+        if (filtered.length == 0) {
+            groups.push({ label: group, date: new Date() });
+        } else {
+            filtered[0].date = new Date();
+        }
     }
 }
 
