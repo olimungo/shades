@@ -130,11 +130,11 @@ class MotorManager:
             self.shadeState = ShadeState().IN_BETWEEN
             self._stop()
 
-    def getStatus(self):
+    def getState(self):
         if self.motorState != MotorState().STOPPED:
-            status = MotorState().STATE_TEXT[self.motorState]
+            state = MotorState().STATE_TEXT[self.motorState]
         else:
-            status = ShadeState().STATE_TEXT[self.shadeState]
+            state = ShadeState().STATE_TEXT[self.shadeState]
 
-        return status
+        return state
 

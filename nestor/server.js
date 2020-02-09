@@ -15,7 +15,11 @@ const log = require('./logger').log;
 const PORT = 8081;
 
 mqtt.connect(mqttMessageReceived);
-websocket.createSocket(http, websocketMessageReceived);
+websocket.createSocket(
+    http,
+    websocketMessageReceived,
+    websocketGetStatesReceived
+);
 
 app.engine('tl', tl);
 app.set('views', './public');
@@ -43,6 +47,10 @@ http.listen(PORT, _ => console.log(`Running on ${PORT}`));
 
 function websocketMessageReceived(topic, message) {
     mqtt.sendMessage(topic, message);
+}
+
+function websocketGetStatesReceived() {
+    websocket.sendMessage(mqtt.getStates());
 }
 
 function mqttMessageReceived(type, topic, message, states) {

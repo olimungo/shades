@@ -8,6 +8,7 @@ services:
         environment:
             - NODE_ENV=production
             - HOST_IP=__HOST_IP__
+            - MQTT_BROKER=192.168.0.167
         volumes:
             - ./:/home/node/app
         expose:

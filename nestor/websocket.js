@@ -2,7 +2,11 @@ const socketIo = require('socket.io');
 
 let io;
 
-exports.createSocket = (http, callbackCommandReceived) => {
+exports.createSocket = (
+    http,
+    callbackCommandReceived,
+    callbackGetStatesReveived
+) => {
     io = socketIo(http);
 
     io.on('connection', socket => {
@@ -16,11 +20,15 @@ exports.createSocket = (http, callbackCommandReceived) => {
                 );
             });
         });
+
+        socket.on('get-states', _ => {
+            callbackGetStatesReveived();
+        });
     });
 };
 
-exports.sendMessage = status => {
+exports.sendMessage = states => {
     io.emit('update', {
-        shades: status
+        shades: states
     });
 };

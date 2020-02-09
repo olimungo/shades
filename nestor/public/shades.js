@@ -18,16 +18,13 @@ let socket;
     // Setting up the websocket
     socket = io();
 
+    socket.emit('get-states');
+
     socket.on('update', payload => {
         shades = payload.shades;
 
-        // Check for devices/groups to add or to remove
-        // Create a copy in case the array gets updated while we work on it
-        shadesCopy = [...shades];
-
-        removeShadeElements(shadesCopy);
-        addShadeElements(shadesCopy);
-
+        removeShadeElements();
+        addShadeElements();
         updateGroups();
     });
 })();
@@ -178,7 +175,6 @@ customElements.define(
 
 // Select the devices belonging to the group that was just selected
 function groupClick(event) {
-    console.log('click');
     const label = event.srcElement.label;
 
     if (label == 'All') {
@@ -194,44 +190,37 @@ function groupClick(event) {
 }
 
 // Remove disconnected devices from the DOM
-function removeShadeElements(shadesCopy) {
+function removeShadeElements() {
     shadeElements = shadeElements.filter(shadeElement => {
-        toKeep =
-            shadesCopy.filter(item => item.netId == shadeElement.label).length >
-            0;
-
-        if (!toKeep) {
+        if (!shades.some(item => item.netId == shadeElement.label)) {
             shadeElement.parentNode.removeChild(shadeElement);
+            return false;
         }
 
-        return toKeep;
+        return true;
     });
 }
 
 // Add newly connected devices and update the state of the ones already existing
-function addShadeElements(shadesCopy) {
+function addShadeElements() {
     let index = 0;
 
-    shadesCopy.forEach(item => {
+    shades.forEach(item => {
         if (index < shadeElements.length) {
-            const shadeElement = shadeElements[index];
-
-            if (shadeElement.label > item.netId) {
+            if (item.netId < shadeElements[index].label) {
                 // Add new shade and set state
-                const newShadeElement = document.createElement('shade-button');
-                newShadeElement.label = item.netId;
-                setGroup(newShadeElement, item.group);
-                setState(newShadeElement, item.state);
-
-                shadeDivs.insertBefore(newShadeElement, shadeElement);
-                shadeElements.splice(index, 0, newShadeElement);
-            } else {
-                // Element already in the DOM. Only have to set state
+                const shadeElement = document.createElement('shade-button');
+                shadeElement.label = item.netId;
                 setGroup(shadeElement, item.group);
                 setState(shadeElement, item.state);
-            }
 
-            index++;
+                shadeDivs.insertBefore(shadeElement, shadeElements[index]);
+                shadeElements.splice(index, 0, shadeElement);
+            } else {
+                // Element already in the DOM. Only have to set state
+                setGroup(shadeElements[index], item.group);
+                setState(shadeElements[index], item.state);
+            }
         } else {
             // Add new shade at the end and set state;
             const newShadeElement = document.createElement('shade-button');
@@ -242,6 +231,8 @@ function addShadeElements(shadesCopy) {
             shadeDivs.appendChild(newShadeElement);
             shadeElements.push(newShadeElement);
         }
+
+        index++;
     });
 }
 
@@ -285,24 +276,66 @@ function setGroup(shadeElement, group) {
 function updateGroups() {
     const now = new Date().getTime();
 
-    // Remove groups that weren't updated since 3 seconds
+    // Remove groups that weren't updated since 35 seconds
     groups = groups.filter(
-        item => item.date == -1 || now - item.date.getTime() < 3000
+        item => item.date == -1 || now - item.date.getTime() < 35000
     );
 
-    // Clean the groups DIV in the DOM
-    while (groupElements.length > 0) {
-        groupElement = groupElements.pop();
-        groupElement.parentNode.removeChild(groupElement);
+    // Remove the groups in the DOM
+    groupElements = groupElements.filter(groupElement => {
+        if (!groups.some(item => item.label == groupElement.label)) {
+            groupElement.parentNode.removeChild(groupElement);
+            return false;
+        }
+
+        return true;
+    });
+
+    // Remove All and None
+    let [all, none, ...newGroups] = [...groups];
+
+    // Keep only new groups and sort
+    newGroups = newGroups
+        .filter(item => !groupElements.some(elem => elem.label == item.label))
+        .sort((a, b) => (a.label < b.label ? -1 : 1));
+
+    // Add back All and None if not yet created
+    if (groupElements.length == 0) {
+        newGroups = [all, none, ...newGroups];
     }
 
-    // Recreate groups
-    groups.forEach(element => {
-        const groupElement = document.createElement('group-button');
-        groupElement.label = element.label;
+    // Insert new groups into the DOM
+    let index = 2;
 
-        groupDivs.appendChild(groupElement);
-        groupElements.push(groupElement);
+    newGroups.forEach(element => {
+        let inserted = false;
+
+        while (index < groupElements.length) {
+            //console.log(element);
+            //console.log(groupElements[index]);
+            if (element.label < groupElements[index].label) {
+                const groupElement = document.createElement('group-button');
+                groupElement.label = element.label;
+
+                groupDivs.insertBefore(groupElement, groupElements[index]);
+                groupElements.splice(index, 0, groupElement);
+
+                inserted = true;
+
+                break;
+            }
+
+            index++;
+        }
+
+        if (!inserted) {
+            // Add at the end
+            const groupElement = document.createElement('group-button');
+            groupElement.label = element.label;
+
+            groupDivs.appendChild(groupElement);
+            groupElements.push(groupElement);
+        }
     });
 }
 

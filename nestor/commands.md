@@ -43,8 +43,9 @@ docker buildx build --platform linux/arm/v7 -t olimungo/nestor:alpine-1.x --push
 ```bash
 docker run \
     -e "HOST_IP=$(ip -4 addr show eth0 | grep -Po 'inet \K[\d.]+')" \
+    -e "MQTT_BROKER=192.168.0.167" \
     -p 80:8081 \
     -v ~/log.txt:/home/node/app/log.txt -d \
     --name=nestor \
-    olimungo/nestor:alpine-1.x
+    olimungo/nestor:alpine-0.95
 ```

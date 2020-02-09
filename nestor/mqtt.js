@@ -1,7 +1,7 @@
 const mqtt = require('mqtt');
 const log = require('./logger').log;
 
-const BROKER = 'mqtt://192.168.0.167';
+const BROKER = `mqtt://${process.env.MQTT_BROKER}`;
 let client;
 let callbackMessageReceived;
 
@@ -16,6 +16,13 @@ exports.connect = callback => {
     client.on('message', gotMessage);
 };
 
+exports.getStates = () =>
+    states.map(item => ({
+        netId: item.netId,
+        group: item.group,
+        state: item.state
+    }));
+
 exports.sendMessage = (topic, message) => {
     client.publish(topic, message);
 };
@@ -24,11 +31,11 @@ function postConnect() {
     client.subscribe('shades/states/#');
     client.subscribe('logs/#');
 
-    // Remove devices which aren't alive (the ones that didn't send a message since 5 seconds)
+    // Remove devices which aren't alive (the ones that didn't send a message since 35 seconds)
     setInterval(_ => {
         const now = new Date().getTime();
 
-        states = states.filter(item => now - item.date.getTime() < 5000);
+        states = states.filter(item => now - item.date.getTime() < 35000);
     }, 1000);
 }
 
