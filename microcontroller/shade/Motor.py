@@ -44,6 +44,7 @@ class MotorManager:
     irCheckTimer = Timer(-1)
     disableTimer = Timer(-1)
     motorCheckTimer = Timer(-1)
+    forceMoving = 0
 
     def __init__(self):
         motorReversed = settings.readMotorReversed()
@@ -102,7 +103,7 @@ class MotorManager:
             # If shade was on top or on bottom, delay the IR check
             # to give a bit of time to leave the reflective marker
             self.motorCheckTimer.init(
-                period=500, mode=Timer.ONE_SHOT, callback=self._motorCheck
+                period=2000, mode=Timer.ONE_SHOT, callback=self._motorCheck
             )
 
     def reverseMotor(self):
@@ -116,17 +117,32 @@ class MotorManager:
             self.ctl2 = Pin(Gpio().MOTOR_CTL2, Pin.OUT)
 
     def goUp(self):
+        if self.shadeState == ShadeState().TOP:
+            self.forceMoving = self.forceMoving + 1
+
+            if self.forceMoving == 3:
+                self.shadeState = ShadeState().IN_BETWEEN
+
         if self.shadeState != ShadeState().TOP:
+            self.forceMoving = 0
             self._moveMotor(MotorDirection().CLOCKWISE)
             self.motorState = MotorState().RUNNING_UP
 
     def goDown(self):
+        if self.shadeState == ShadeState().BOTTOM:
+            self.forceMoving = self.forceMoving + 1
+
+            if self.forceMoving == 3:
+                self.shadeState = ShadeState().IN_BETWEEN
+
         if self.shadeState != ShadeState().BOTTOM:
+            self.forceMoving = 0
             self._moveMotor(MotorDirection().COUNTERCLOCKWISE)
             self.motorState = MotorState().RUNNING_DOWN
 
     def stop(self):
         if self.motorState != MotorState().STOPPED:
+            self.forceMoving = 0
             self.shadeState = ShadeState().IN_BETWEEN
             self._stop()
 

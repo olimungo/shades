@@ -4,13 +4,14 @@ html {
     font-weight: 100;
     color: orange;
     background: #222;
-    margin: 2vw;
+    margin: 1vw;
     display: flex;
     justify-content: center;
 }
 
 body {
-    width: 40rem;
+    width: 45rem;
+    margin: 0;
 }
 
 button {
