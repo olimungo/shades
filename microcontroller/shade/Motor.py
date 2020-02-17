@@ -45,6 +45,7 @@ class MotorManager:
     disableTimer = Timer(-1)
     motorCheckTimer = Timer(-1)
     forceMoving = 0
+    stoppedByIrSensor = False
 
     def __init__(self):
         motorReversed = settings.readMotorReversed()
@@ -80,6 +81,8 @@ class MotorManager:
                 self.shadeState = ShadeState().TOP
             else:
                 self.shadeState = ShadeState().BOTTOM
+
+            self.stoppedByIrSensor = True
 
             self._stop()
 
@@ -145,6 +148,13 @@ class MotorManager:
             self.forceMoving = 0
             self.shadeState = ShadeState().IN_BETWEEN
             self._stop()
+
+    def checkStoppedByIrSensor(self):
+        if self.stoppedByIrSensor:
+            self.stoppedByIrSensor = False
+            return True
+
+        return False
 
     def getState(self):
         if self.motorState != MotorState().STOPPED:

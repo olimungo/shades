@@ -140,6 +140,9 @@ def heartbeat(timer):
     if isMqttBrokerFound:
         checkForMqttMessage()
 
+    if motorManager.checkStoppedByIrSensor():
+        sendMqttState()
+
 
 def startupDelayEllapsed(timer):
     global isStartupDelayEllapsed
