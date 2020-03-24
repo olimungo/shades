@@ -1,47 +1,43 @@
 # Setup the Raspberry Pi and Mosquitto
 
-## Burn Raspian to an SD-card (MacOS)
+## Burn Raspian to an SD-card
+
+Download and install **Raspberry Pi Imager**: https://www.raspberrypi.org/downloads/
+
+Burn **Raspbian Lite** onto an SD card
+
+To allow a headless config, enable ssh on the Pi. Move to the boot folder on the SD card and create an empty **ssh** file.
+
+on Linux:
 
 ```
-sudo dd bs=1m if=2019-09-26-raspbian-buster-lite.img of=/dev/rdiskx conv=sync
+touch ssh
 ```
 
-## Configure the Pi
+Also, setup your Wifi credentials. Still in the boot folder of the SD card, edit a file called **wpa_supplicant.conf**, add the following content while replacing the **keyword** with your country code and your credentials.
 
-Insert the SD-card, connect the Pi physically to the Wifi router, boot it, then ssh it with the password **raspberry**
-
-### Setup with raspi-config
+:exclamation: Make sure there is a **TAB** at the start of the lines with **ssid** and **psk**. :exclamation:
 
 ```
-arp -a
-ssh pi@192.168.0.xxx
-sudo raspi-config
-```
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=<Insert country code here>
 
--   Change the hostname to "nestor"
--   Enable ssh
--   Set locale
--   Set timezone
--   Set keyboard layout
-
-#### Install drivers for the Wifi USB dongle
-
-```
-sudo wget http://www.fars-robotics.net/install-wifi -O /usr/bin/install-wifi
-sudo chmod +x /usr/bin/install-wifi
-sudo install-wifi
-```
-
-After installation, reboot the Pi and add the following lines to /etc/**wpa_supplicant/wpa_supplicant.conf**
-
-```
 network={
-  ssid="ssid"
-  psk="password"
+  ssid="<Name of your WiFi>"
+  psk="<Password for your WiFi>"
 }
 ```
 
-Update the system
+## Setup the Pi
+
+Insert the SD-card, connect the Pi physically to the Wifi router, boot it, then ssh it with the password **raspberry**
+
+```
+ssh pi@rapsberrypi.local
+```
+
+### Update the system
 
 ```
 sudo apt-get update
@@ -49,74 +45,42 @@ sudo apt-get upgrade
 sudo apt-get clean
 ```
 
-### Install MDNS
+### Configure the Pi
 
 ```
-sudo apt-get install avahi-daemon
+sudo raspi-config
 ```
 
-Might be needed... but maybe not... to be tested if MDNS is still working without it... Maybe ssh with MDNS won't work ! #TODO #CHECK
+-   Change the hostname to "nestor"
+-   Set locale
+-   Set timezone
+-   Set keyboard layout
+
+#### Install drivers for the Wifi USB dongle (for Raspberry Pi 2)
 
 ```
-sudo apt-get install libnss-mdns
+sudo wget http://downloads.fars-robotics.net/wifi-drivers/install-wifi -O /usr/bin/install-wifi
+sudo chmod +x /usr/bin/install-wifi
+sudo install-wifi
 ```
 
-Make sure that the /etc/nsswitch.conf contains this line:
-
-```
-hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4
-```
-
-For added convenience, you may want to add the sshd to the advertised services of avahi. Simply add a file /etc/avahi/services/ssh.service containing the following lines:
-
-```
-<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
-<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
-<service-group>
-  <name replace-wildcards="yes">%h</name>
-  <service>
-     <type>_ssh._tcp</type>
-     <port>22</port>
-  </service>
-</service-group>
-```
+After installation, reboot the Pi.
 
 ## Docker on the Pi
 
 Install docker
 
 ```
-curl -fsSL get.docker.com -o get-docker.sh && sh get-docker.sh
-```
-
-or
-
-```
 curl -sSL https://get.docker.com | sh
 ```
 
-:exclamation: To allow to run docker without sudo apply one of the following solution.
-
-#### Solution 1
-
-The group should already exists, but in case...
-
-```
-sudo groupadd docker
-```
-
-Then...
-
-```
-sudo gpasswd -a \$USER docker
-newgrp docker
-```
-
-#### or Solution 2
+:exclamation: To allow to run docker without sudo apply one of the following solution. :exclamation:
 
 ```
 sudo usermod -aG docker pi
 ```
+
+Then, logout from the Pin the login againg to refresh the session.
 
 ## Mosquitto
 
@@ -132,12 +96,12 @@ log_type all
 ### Run it
 
 ```
-
 docker run \
   -p 1883:1883 \
   -p 9001:9001 \
   -v ~/mosquitto.conf:/home/pi/mosquitto/mosquitto.conf \
   -v ~/log:/home/pi/mosquitto/log \
   -d \
+  --name=mosquitto \
   eclipse-mosquitto
 ```

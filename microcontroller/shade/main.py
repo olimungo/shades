@@ -175,7 +175,7 @@ def checkWifiConnection(timer):
                 else:
                     isMqttBrokerFound = False
 
-                Blink().fast()
+                Blink().flash()
         else:
             isStationConnected = False
             isMqttBrokerFound = False

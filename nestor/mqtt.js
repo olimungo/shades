@@ -35,7 +35,13 @@ function postConnect() {
     setInterval(_ => {
         const now = new Date().getTime();
 
+        statesLength = states.length;
+
         states = states.filter(item => now - item.date.getTime() < 35000);
+
+        if (states.length != statesLength) {
+            returnStates();
+        }
     }, 1000);
 }
 
@@ -60,18 +66,22 @@ function gotMessage(topic, message) {
 
             states = states.sort((a, b) => (a.netId < b.netId ? -1 : 1));
 
-            callbackMessageReceived(
-                'states',
-                topic,
-                message,
-                states.map(item => ({
-                    netId: item.netId,
-                    group: item.group,
-                    state: item.state
-                }))
-            );
+            returnStates();
         } catch (error) {
             log(`ERROR in mqtt.gotMessage: ${error}|${message.toString()}`);
         }
     }
+}
+
+function returnStates() {
+    callbackMessageReceived(
+        'states',
+        null,
+        null,
+        states.map(item => ({
+            netId: item.netId,
+            group: item.group,
+            state: item.state
+        }))
+    );
 }
