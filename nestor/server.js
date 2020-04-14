@@ -5,7 +5,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 
 const app = require('express')();
-const http = require('http').createServer(app);
+const httpServer = require('http').createServer(app);
 const tl = require('express-tl');
 
 const mqtt = require('./mqtt');
@@ -15,8 +15,9 @@ const log = require('./logger').log;
 const PORT = 8081;
 
 mqtt.connect(mqttMessageReceived);
+
 websocket.createSocket(
-    http,
+    httpServer,
     websocketMessageReceived,
     websocketGetStatesReceived
 );
@@ -27,14 +28,14 @@ app.set('view engine', 'tl');
 
 app.get('/', (req, res) => {
     res.render('shades', {
-        ip: process.env.HOST_IP
+        ip: process.env.HOST_IP,
     });
 });
 
 app.get('*', (req, res) => {
     const file = path.join(__dirname, 'public', req.originalUrl);
 
-    fs.access(file, fs.F_OK, error => {
+    fs.access(file, fs.F_OK, (error) => {
         if (error) {
             res.sendStatus(404);
         } else {
@@ -43,7 +44,7 @@ app.get('*', (req, res) => {
     });
 });
 
-http.listen(PORT, _ => console.log(`Running on ${PORT}`));
+httpServer.listen(PORT, (_) => console.log(`Running on ${PORT}`));
 
 function websocketMessageReceived(topic, message) {
     mqtt.sendMessage(topic, message);
@@ -56,7 +57,7 @@ function websocketGetStatesReceived() {
 function mqttMessageReceived(type, topic, message, states) {
     switch (type) {
         case 'logs':
-            topic = log(`${topic.substr(5)}|${message}`);
+            log(`${topic.substr(5)}|${message}`);
             break;
         case 'states':
             websocket.sendMessage(states);

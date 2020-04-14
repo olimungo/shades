@@ -1,6 +1,5 @@
 from machine import reset
 import esp
-
 import webrepl
 
 print("")
@@ -10,7 +9,7 @@ print("")
 esp.sleep_type(esp.SLEEP_NONE)
 esp.osdebug(None)
 
-webrepl.start()
+# webrepl.start()
 
 
 def rst():

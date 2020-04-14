@@ -1,6 +1,6 @@
 let groups = [
     { label: 'All', date: -1 },
-    { label: 'None', date: -1 }
+    { label: 'None', date: -1 },
 ];
 
 let shades = [];
@@ -11,7 +11,7 @@ let shadeElements = [];
 let socket;
 
 // Executed when the DOM is ready
-(function() {
+(function () {
     groupDivs = document.getElementById('groups');
     shadeDivs = document.getElementById('shades');
 
@@ -20,7 +20,7 @@ let socket;
 
     socket.emit('get-states');
 
-    socket.on('update', payload => {
+    socket.on('update', (payload) => {
         shades = payload.shades;
 
         removeShadeElements();
@@ -129,7 +129,7 @@ customElements.define(
             clearInterval(this.highlightInterval);
 
             this.highlightInterval = setInterval(
-                _ => up.classList.toggle('highlight'),
+                (_) => up.classList.toggle('highlight'),
                 500
             );
         }
@@ -142,7 +142,7 @@ customElements.define(
             clearInterval(this.highlightInterval);
 
             this.highlightInterval = setInterval(
-                _ => down.classList.toggle('highlight'),
+                (_) => down.classList.toggle('highlight'),
                 500
             );
         }
@@ -178,12 +178,14 @@ function groupClick(event) {
     const label = event.srcElement.label;
 
     if (label == 'All') {
-        shadeElements.forEach(shadeElement => (shadeElement.selected = true));
+        shadeElements.forEach((shadeElement) => (shadeElement.selected = true));
     } else if (label == 'None') {
-        shadeElements.forEach(shadeElement => (shadeElement.selected = false));
+        shadeElements.forEach(
+            (shadeElement) => (shadeElement.selected = false)
+        );
     } else {
         shadeElements.forEach(
-            shadeElement =>
+            (shadeElement) =>
                 (shadeElement.selected = shadeElement.group == label)
         );
     }
@@ -191,8 +193,8 @@ function groupClick(event) {
 
 // Remove disconnected devices from the DOM
 function removeShadeElements() {
-    shadeElements = shadeElements.filter(shadeElement => {
-        if (!shades.some(item => item.netId == shadeElement.label)) {
+    shadeElements = shadeElements.filter((shadeElement) => {
+        if (!shades.some((item) => item.netId == shadeElement.label)) {
             shadeElement.parentNode.removeChild(shadeElement);
             return false;
         }
@@ -205,7 +207,7 @@ function removeShadeElements() {
 function addShadeElements() {
     let index = 0;
 
-    shades.forEach(item => {
+    shades.forEach((item) => {
         if (index < shadeElements.length) {
             if (item.netId < shadeElements[index].label) {
                 // Add new shade and set state
@@ -263,7 +265,7 @@ function setGroup(shadeElement, group) {
     shadeElement.group = group;
 
     if (group != '') {
-        filtered = groups.filter(item => item.label == group);
+        filtered = groups.filter((item) => item.label == group);
 
         if (filtered.length == 0) {
             groups.push({ label: group, date: new Date() });
@@ -278,12 +280,12 @@ function updateGroups() {
 
     // Remove groups that weren't updated since 35 seconds
     groups = groups.filter(
-        item => item.date == -1 || now - item.date.getTime() < 35000
+        (item) => item.date == -1 || now - item.date.getTime() < 35000
     );
 
     // Remove the groups in the DOM
-    groupElements = groupElements.filter(groupElement => {
-        if (!groups.some(item => item.label == groupElement.label)) {
+    groupElements = groupElements.filter((groupElement) => {
+        if (!groups.some((item) => item.label == groupElement.label)) {
             groupElement.parentNode.removeChild(groupElement);
             return false;
         }
@@ -296,7 +298,9 @@ function updateGroups() {
 
     // Keep only new groups and sort
     newGroups = newGroups
-        .filter(item => !groupElements.some(elem => elem.label == item.label))
+        .filter(
+            (item) => !groupElements.some((elem) => elem.label == item.label)
+        )
         .sort((a, b) => (a.label < b.label ? -1 : 1));
 
     // Add back All and None if not yet created
@@ -307,7 +311,7 @@ function updateGroups() {
     // Insert new groups into the DOM
     let index = 2;
 
-    newGroups.forEach(element => {
+    newGroups.forEach((element) => {
         let inserted = false;
 
         while (index < groupElements.length) {
@@ -341,13 +345,13 @@ function updateGroups() {
 
 function emitCommand(command) {
     netIds = shadeElements
-        .filter(shadeElement => shadeElement.selected)
-        .map(shadeElement => shadeElement.label);
+        .filter((shadeElement) => shadeElement.selected)
+        .map((shadeElement) => shadeElement.label);
 
     if (netIds.length > 0) {
         socket.emit(
             'mqtt-command',
-            `{"topic": "shades/commands", "netIds": [${netIds}], "message": "${command}"}`
+            `{"topic": "commands/shades", "netIds": [${netIds}], "message": "${command}"}`
         );
     }
 }

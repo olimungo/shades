@@ -7,7 +7,7 @@ let callbackMessageReceived;
 
 let states = [];
 
-exports.connect = callback => {
+exports.connect = (callback) => {
     callbackMessageReceived = callback;
 
     client = mqtt.connect(BROKER);
@@ -17,10 +17,10 @@ exports.connect = callback => {
 };
 
 exports.getStates = () =>
-    states.map(item => ({
+    states.map((item) => ({
         netId: item.netId,
         group: item.group,
-        state: item.state
+        state: item.state,
     }));
 
 exports.sendMessage = (topic, message) => {
@@ -28,16 +28,16 @@ exports.sendMessage = (topic, message) => {
 };
 
 function postConnect() {
-    client.subscribe('shades/states/#');
+    client.subscribe('states/shades/#');
     client.subscribe('logs/#');
 
     // Remove devices which aren't alive (the ones that didn't send a message since 35 seconds)
-    setInterval(_ => {
+    setInterval((_) => {
         const now = new Date().getTime();
 
         statesLength = states.length;
 
-        states = states.filter(item => now - item.date.getTime() < 35000);
+        states = states.filter((item) => now - item.date.getTime() < 35000);
 
         if (states.length != statesLength) {
             returnStates();
@@ -50,18 +50,18 @@ function gotMessage(topic, message) {
         callbackMessageReceived('logs', topic, message);
     }
 
-    if (topic.indexOf('shades/states/') > -1) {
-        netId = parseInt(topic.split('shades/states/')[1]);
+    if (topic.indexOf('states/shades/') > -1) {
+        netId = parseInt(topic.split('states/shades/')[1]);
 
         try {
             jsonMessage = JSON.parse(message.toString());
 
-            states = states.filter(item => item.netId != netId);
+            states = states.filter((item) => item.netId != netId);
             states.push({
                 netId,
                 group: jsonMessage.group,
                 state: jsonMessage.state,
-                date: new Date()
+                date: new Date(),
             });
 
             states = states.sort((a, b) => (a.netId < b.netId ? -1 : 1));
@@ -78,10 +78,10 @@ function returnStates() {
         'states',
         null,
         null,
-        states.map(item => ({
+        states.map((item) => ({
             netId: item.netId,
             group: item.group,
-            state: item.state
+            state: item.state,
         }))
     );
 }

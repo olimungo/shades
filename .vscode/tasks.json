@@ -14,13 +14,6 @@
             }
         },
         {
-            "label": "Test",
-            "type": "shell",
-            "command": "echo ${fileDirname}",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
             "label": "Upload All",
             "type": "shell",
             "command": "kill $(pgrep -f mpfshell); cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1430; mput .*\\.py; mput index.html'",
@@ -28,7 +21,21 @@
             "problemMatcher": []
         },
         {
-            "label": "Erase flash",
+            "label": "Build custom micropython",
+            "type": "shell",
+            "command": "cd micropython-build; docker build -t micropython .; docker run -d --name=micropython micropython; docker cp micropython:/micropython/ports/esp8266/build-GENERIC/firmware-combined.bin ..; docker rm -f micropython; docker rmi -f micropython",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Erase and flash ESP with custom micropython",
+            "type": "shell",
+            "command": "esptool.py --port /dev/tty.usbserial-1430 erase_flash; esptool.py --port /dev/tty.usbserial-1430 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Erase ESP",
             "type": "shell",
             "command": "esptool.py --port /dev/tty.usbserial-1430 erase_flash",
             "group": "build",
@@ -37,7 +44,7 @@
         {
             "label": "Flash ESP with micropython",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1430 --baud 460800 write_flash --flash_size=detect 0 esp8266-20190529-v1.11.bin",
+            "command": "esptool.py --port /dev/tty.usbserial-1430 --baud 460800 write_flash --flash_size=detect 0 esp8266-20191220-v1.12.bin",
             "group": "build",
             "problemMatcher": []
         },

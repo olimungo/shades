@@ -1,5 +1,5 @@
-#### enqack/esp8266-micropython
-FROM phusion/baseimage:0.9.19
+# enqack/esp8266-micropython
+FROM phusion/baseimage:0.9.19 as micropython-base
 ARG VERSION=v1.12
 
 RUN apt-get update \
@@ -55,8 +55,3 @@ RUN cd /micropython/mpy-cross && make
 RUN cd /micropython/ports/unix && make axtls && make
 
 RUN cd /micropython && make -C mpy-cross/ V=1
-
-RUN mkdir /micropython/ports/esp8266/modules/umqtt
-ADD umqtt.simple.py /micropython/ports/esp8266/modules/umqtt/simple.py
-
-ADD slimDNS.py /micropython/ports/esp8266/modules/

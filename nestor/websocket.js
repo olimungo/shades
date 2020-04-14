@@ -3,17 +3,17 @@ const socketIo = require('socket.io');
 let io;
 
 exports.createSocket = (
-    http,
+    httpServer,
     callbackCommandReceived,
     callbackGetStatesReveived
 ) => {
-    io = socketIo(http);
+    io = socketIo(httpServer);
 
-    io.on('connection', socket => {
-        socket.on('mqtt-command', message => {
+    io.on('connection', (socket) => {
+        socket.on('mqtt-command', (message) => {
             command = JSON.parse(message);
 
-            command.netIds.forEach(netId => {
+            command.netIds.forEach((netId) => {
                 callbackCommandReceived(
                     `${command.topic}/${netId}`,
                     command.message
@@ -21,14 +21,14 @@ exports.createSocket = (
             });
         });
 
-        socket.on('get-states', _ => {
+        socket.on('get-states', (_) => {
             callbackGetStatesReveived();
         });
     });
 };
 
-exports.sendMessage = states => {
+exports.sendMessage = (states) => {
     io.emit('update', {
-        shades: states
+        shades: states,
     });
 };

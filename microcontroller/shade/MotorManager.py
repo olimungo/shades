@@ -3,8 +3,8 @@ import settings
 
 
 class Gpio:
-    MOTOR_CTL1 = 13  # D7
-    MOTOR_CTL2 = 15  # D8
+    MOTOR_CTL1 = 13  # D7 - Control motor direction
+    MOTOR_CTL2 = 15  # D8 - Control motor direction
     IR_SENSOR = 0  # A0 - ADC
     IR_POWER = 5  # D1
     STDBY_PWM_POWER = 4  # D2
@@ -104,12 +104,12 @@ class MotorManager:
             self._motorCheck()
         else:
             # If shade was on top or on bottom, delay the IR check
-            # to give a bit of time to leave the reflective marker
+            # to allow to leave the reflective marker
             self.motorCheckTimer.init(
                 period=2000, mode=Timer.ONE_SHOT, callback=self._motorCheck
             )
 
-    def reverseMotor(self):
+    def reverseDefaultDirection(self):
         motorReversed = settings.readMotorReversed()
 
         if motorReversed == "0":
@@ -163,4 +163,3 @@ class MotorManager:
             state = ShadeState().STATE_TEXT[self.shadeState]
 
         return state
-

@@ -1,41 +1,9 @@
-# slimDNS
-# Simple, Lightweight Implementation of Multicast DNS
-
-# Copyright 2018 Nicko van Someren
-
-# Licensed under the Apache License, Version 2.0 (the "License"); you
-# may not use this file except in compliance with the License. You may
-# obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied. See the License for the specific language governing
-# permissions and limitations under the License.
-
-# SPDX-License-Identifier: Apache-2.0
-
-
-__version__ = "0.1.1"
-__author__ = "Nicko van Someren"
-__license__ = "Apache-2.0"
-
 import sys
-
-if sys.implementation.name != "micropython":
-    const = lambda x: x
-
 import time
 from select import select
-
-try:
-    from ustruct import pack_into, unpack_from
-except:
-    from struct import pack_into, unpack_from
-
+from ustruct import pack_into, unpack_from
 import socket
+import uasyncio as asyncio
 
 # The biggest packet we will process
 MAX_PACKET_SIZE = const(1024)
@@ -43,9 +11,9 @@ MAX_PACKET_SIZE = const(1024)
 MAX_NAME_SEARCH = const(20)
 
 # DNS constants
-
 _MDNS_ADDR = "224.0.0.251"
 _MDNS_PORT = const(5353)
+_UDPS_PORT = const(53)
 _DNS_TTL = const(2 * 60)  # two minute default TTL
 
 _FLAGS_QR_MASK = const(0x8000)  # query response mask
@@ -194,43 +162,114 @@ def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
     return q_class == r_class or q_class == _TYPE_ANY
 
 
-# The main SlimDNSServer class
-class SlimDNSServer:
-    def __init__(self):
-        pass
+class DNSQuery:
+    def __init__(self, data):
+        self.data = data
+        self.domain = ""
 
-    def connect(self, local_addr, hostname=None):
-        # If a hostname is give we try to register it
-        self.local_addr = local_addr
-        self.sock = self._make_socket()
-        self.sock.bind(("", _MDNS_PORT))
-        self.adverts = []
-        self.hostname = None
-        self._reply_buffer = None
-        self._pending_question = None
-        self.answered = False
+        m = data[2]
+        tipo = (m >> 3) & 15
 
-        if hostname:
-            self.advertise_hostname(hostname)
+        if tipo == 0:
+            ini = 12
+            lon = data[ini]
+
+            while lon != 0:
+                self.domain += data[ini + 1 : ini + lon + 1].decode("utf-8") + "."
+                ini += lon + 1
+                lon = data[ini]
+
+    def response(self, ip):
+        packet = b""
+
+        if self.domain:
+            packet += self.data[:2] + b"\x81\x80"
+            packet += self.data[4:6] + self.data[4:6] + b"\x00\x00\x00\x00"
+            packet += self.data[12:]
+            packet += b"\xc0\x0c"
+            packet += b"\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04"
+            packet += bytes(map(int, ip.split(".")))
+
+        return packet
+
+
+class DnsServer:
+    loop = asyncio.get_event_loop()
+    connected = False
+
+    def __init__(self, wifiManager, hostname):
+        self.wifiManager = wifiManager
+        self.hostname = hostname
+
+        self.udps = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udps.setblocking(False)
+        self.udps.bind(("", _UDPS_PORT))
+
+        self.loop.create_task(self._checkMdns())
+        self.loop.create_task(self._checkUdps())
+
+    async def _checkMdns(self):
+        while True:
+            while not self.wifiManager.isConnectedToStation():
+                await asyncio.sleep(1)
+
+            self._connect()
+
+            while self.wifiManager.isConnectedToStation() and self.connected:
+                readers, _, _ = select([self.sock], [], [], None)
+                self._process_waiting_packets()
+
+                await asyncio.sleep_ms(500)
+
+            self.connected = False
+
+    async def _checkUdps(self):
+        while True:
+            try:
+                data, address = self.udps.recvfrom(2048)
+                dnsQuery = DNSQuery(data)
+
+                self.udps.sendto(dnsQuery.response(self.wifiManager.getIp()), address)
+
+                print("> Address: {}".format(address))
+            except:
+                pass
+
+            await asyncio.sleep_ms(300)
+
+    def _connect(self):
+        try:
+            self.sock = self._make_socket()
+            self.connected = True
+        except Exception as e:
+            print("> mDns connect error: {}".format(e))
 
     def _make_socket(self):
-        # Note that on devices with a more complete UDP/IP stack it
-        # might be necessary to set more options on the socket,
-        # incluing things like setting the mutlicast TTL and enabling
-        # multicast on the interface.
+        self.local_addr = self.wifiManager.getIp()
+
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         member_info = dotted_ip_to_bytes(_MDNS_ADDR) + dotted_ip_to_bytes(
             self.local_addr
         )
+
         s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, member_info)
+
+        s.bind(("", _MDNS_PORT))
+
+        self.adverts = []
+        self._reply_buffer = None
+        self._pending_question = None
+        self.answered = False
+        self._advertise_hostname()
+
         return s
 
-    def advertise_hostname(self, hostname, find_vacant=True):
-        # Try to advertise our own IP address under the given hostname
-        # If the hostname is taken we try to tack some numbers on the end to make it unique
-        hostname = check_name(hostname)
+    def _advertise_hostname(self, find_vacant=True):
+        hostname = check_name(self.hostname)
         n = len(hostname)
+
         if n == 1:
             hostname.append(b"local")
         elif n == 0 or n > 2 or hostname[1] != b"local":
@@ -239,27 +278,23 @@ class SlimDNSServer:
         ip_bytes = dotted_ip_to_bytes(self.local_addr)
 
         basename = hostname[0]
+
         for i in range(MAX_NAME_SEARCH):
             if i != 0:
                 hostname[0] = basename + b"-" + str(i)
+
             addr = self.resolve_mdns_address(hostname, True)
-            # Some helpful machine might know us and send us our own address
+
             if not addr or addr == ip_bytes:
                 break
-            # Even is seaching we have to give up eventually
+
             if not find_vacant or i == MAX_NAME_SEARCH - 1:
                 raise ValueError("Name in use")
 
         A_record = pack_answer(hostname, _TYPE_A, _CLASS_IN, _DNS_TTL, ip_bytes)
         self.adverts.append(A_record)
-        self.hostname = hostname
 
-        # We could add a reverse PTR record here.
-        # We don't, BIWIOMS
-
-    def process_packet(self, buf, addr):
-        # Process a single multicast DNS packet
-
+    def _process_packet(self, buf, addr):
         (pkt_id, flags, qst_count, ans_count, _, _) = unpack_from("!HHHHHH", buf, 0)
         o = 12
         matches = []
@@ -271,9 +306,6 @@ class SlimDNSServer:
                     reply_len += len(a)
             o = skip_question(buf, o)
 
-        # In theory we could do known answer suppression here
-        # We don't, BIWIOMS
-
         if self._pending_question:
             for i in range(ans_count):
                 if compare_q_and_a(self._pending_question, 0, buf, o):
@@ -284,15 +316,7 @@ class SlimDNSServer:
         if not matches:
             return
 
-        # We could check for duplicates in the answers (which is
-        # possible) but we don't, BIWIOMS
-
-        # Since Micropython sockets don't currently support
-        # recvfrom_into() we need to have our own buffer for the
-        # reply, even though we are now done with the receiving buffer
-
         if not self._reply_buffer or len(self._reply_buffer) < reply_len:
-            # print("Making new reply buffer of len {}".format(reply_len))
             self._reply_buffer = memoryview(bytearray(reply_len))
 
         buf = self._reply_buffer
@@ -313,42 +337,28 @@ class SlimDNSServer:
             buf[o : o + l] = a
             o += l
 
-        # print("Sending packed reply: {}".format(bytes(buf[:o])))
-
-        # We fake the handling of unicast replies. If the packet came
-        # from the mutlicast port we multicast the reply but if it
-        # came from any other port we unicast the reply.
         self.sock.sendto(
             buf[:o], (_MDNS_ADDR, _MDNS_PORT) if addr[0] == _MDNS_PORT else addr
         )
 
-    def process_waiting_packets(self):
-        # Handle all the packets that can be read immediately and
-        # return as soon as none are waiting
+    def _process_waiting_packets(self):
         while True:
             readers, _, _ = select([self.sock], [], [], 0)
+
             if not readers:
                 break
+
             buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
-            # print("Received {} bytes from {}".format(len(buf), addr))
+
             if buf and addr[0] != self.local_addr:
                 try:
-                    self.process_packet(memoryview(buf), addr)
+                    self._process_packet(memoryview(buf), addr)
                 except IndexError:
                     print("Index error processing packet; probably malformed data")
                 except Exception as e:
                     print("Error processing packet: {}".format(e))
-                    # raise e
 
-    def processPackets(self):
-        readers, _, _ = select([self.sock], [], [], None)
-        self.process_waiting_packets()
-
-    def handle_question(self, q, answer_callback, fast=False, retry_count=3):
-        # Send our a (packed) question, and send matching replies to
-        # the answer_callback function.  This will stop after sending
-        # the given number of retries and waiting for the a timeout on
-        # each, or sooner if the answer_callback function returns True
+    def _handle_question(self, q, answer_callback, fast=False, retry_count=3):
         p = bytearray(len(q) + 12)
         pack_into("!HHHHHH", p, 0, 1, 0, 1, 0, 0, 0, 0)
         p[12:] = q
@@ -369,20 +379,26 @@ class SlimDNSServer:
                         break
                     (rr, _, _) = select([self.sock], [], [], sel_time / 1000.0)
                     if rr:
-                        self.process_waiting_packets()
+                        self._process_waiting_packets()
         finally:
             self._pending_question = None
             self._answer_callback = None
 
     def resolve_mdns_address(self, hostname, fast=False):
-        # Look up an IPv4 address for a hostname using mDNS.
-        q = pack_question(hostname, _TYPE_A, _CLASS_IN)
-        answer = []
+        if self.connected:
+            q = pack_question(hostname, _TYPE_A, _CLASS_IN)
+            answer = []
 
-        def _answer_handler(a):
-            addr_offset = skip_name_at(a, 0) + 10
-            answer.append(a[addr_offset : addr_offset + 4])
-            return True
+            def _answer_handler(a):
+                addr_offset = skip_name_at(a, 0) + 10
+                answer.append(a[addr_offset : addr_offset + 4])
+                return True
 
-        self.handle_question(q, _answer_handler, fast)
-        return bytes(answer[0]) if answer else None
+            self._handle_question(q, _answer_handler, fast)
+            return bytes(answer[0]) if answer else None
+
+    def isConnected(self):
+        return self.connected
+
+    def getIp(self):
+        return self.wifiManager.getIp()

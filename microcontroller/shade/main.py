@@ -1,196 +1,74 @@
-from machine import Timer
-import network
+import uasyncio as asyncio
+from WifiManager import WifiManager
 
-from Web import WebServer
-from Wifi import WifiManager
-from Motor import MotorManager
+from DnsServer import DnsServer
+
+from MqttManager import MqttManager
+from ShadeManager import ShadeManager
+from WebServer import WebServer
 import settings
-from Blink import Blink
-from Mqtt import MqttManager
-from slimDNS import SlimDNSServer
+
 
 PUBLIC_NAME = "shade"
-BROKER_TOPIC_NAME = "shades"
 MQTT_BROKER_NAME = "nestor.local"
-
+BROKER_TOPIC_NAME = "shades"
 netId = settings.readNetId()
-station = network.WLAN(network.STA_IF)
-ap = network.WLAN(network.AP_IF)
 
-webServer = WebServer()
 wifiManager = WifiManager("{}-{}".format(PUBLIC_NAME, netId))
-motorManager = MotorManager()
-mqttManager = MqttManager(
-    "{}/commands".format(BROKER_TOPIC_NAME),
-    "{}/states".format(BROKER_TOPIC_NAME),
-    "logs/{}".format(BROKER_TOPIC_NAME),
-)
-dnsServer = SlimDNSServer()
+dnsServer = DnsServer(wifiManager, "{}-{}".format(PUBLIC_NAME, netId))
+mqttManager = MqttManager(dnsServer, MQTT_BROKER_NAME, netId, BROKER_TOPIC_NAME)
+webServer = WebServer()
 
-isStartupDelayEllapsed = False
-isStationConnected = False
-isMqttBrokerFound = False
+shadeManager = ShadeManager(wifiManager, dnsServer, mqttManager, webServer)
 
-startupDelayEllapsedTimer = Timer(-1)
-checkWifiConnectionTimer = Timer(-1)
-heartbeatTimer = Timer(-1)
-sendMqttStateTimer = Timer(-1)
+"""
+def _index(client):
+    print("> _index")
 
+    ip = wifiManager.getIp()
+    netId, essid, motorReversed, group = settings.readSettings()
 
-def handleWeb():
-    try:
-        emptyRequest, client, path, queryStringsArray = webServer.handleRequest()
+    if motorReversed == "1":
+        motorReversed = "CHECKED"
+    else:
+        motorReversed = ""
 
-        if not emptyRequest:
-            if path == "/":
-                ip = wifiManager.getIp()
-                netId, essid, motorReversed, group = settings.readSettings()
+    interpolate = {
+        "IP": ip,
+        "NET_ID": netId,
+        "ESSID": essid,
+        "MOTOR_REVERSED": motorReversed,
+        "GROUP": group,
+    }
 
-                webServer.index(client, ip, netId, essid, motorReversed, group)
-            elif path == "/action/go-up":
-                print(path)
-                motorManager.goUp()
-                webServer.ok(client)
-                sendMqttState()
-
-                netId = settings.readNetId()
-            elif path == "/action/go-down":
-                print(path)
-                motorManager.goDown()
-                webServer.ok(client)
-                sendMqttState()
-            elif path == "/action/stop":
-                print(path)
-                motorManager.stop()
-                webServer.ok(client)
-                sendMqttState()
-            elif path == "/settings/set-net":
-                if len(queryStringsArray) > 0 and not queryStringsArray["id"] == "":
-                    settings.writeNetId(queryStringsArray["id"])
-
-                webServer.ok(client)
-            elif path == "/settings/reverse-motor":
-                settings.writeMotorReversed()
-                motorManager.reverseMotor()
-                webServer.ok(client)
-            elif path == "/settings/group":
-                if len(queryStringsArray) > 0:
-                    settings.writeGroup(queryStringsArray["name"])
-
-                webServer.ok(client)
-            elif path == "/settings/connect":
-                if (
-                    len(queryStringsArray) > 0
-                    and not queryStringsArray["essid"] == ""
-                    and not queryStringsArray["pwd"] == ""
-                ):
-                    settings.writeEssid(queryStringsArray["essid"])
-
-                    wifiManager.connect(
-                        queryStringsArray["essid"], queryStringsArray["pwd"]
-                    )
-
-                webServer.ok(client)
-            else:
-                print(path)
-                webServer.notFound(client)
-    except Exception as e:
-        print("> handleWeb exception: {}".format(e))
+    webServer.index(client, interpolate, False)
 
 
-def checkForMqttMessage():
-    try:
-        message = mqttManager.checkMessage()
+def _index2(client):
+    print("> _index2")
 
-        if message == "up":
-            motorManager.goUp()
-        elif message == "down":
-            motorManager.goDown()
-        elif message == "stop":
-            motorManager.stop()
-
-        if message in ["up", "down", "stop"]:
-            sendMqttState()
-    except Exception as e:
-        print("> checkForMqttMessage exception: {}".format(e))
+    webServer.index2(client)
 
 
-def sendMqttState(timer=None):
-    try:
-        if isMqttBrokerFound:
-            group = settings.readGroup()
-            motorState = motorManager.getState()
+async def _pollWebServer():
+    while True:
+        try:
+            (emptyRequest, client, path, queryStringsArray,) = webServer.poll()
 
-            state = "{" + '"group": "{}", "state": "{}"'.format(group, motorState) + "}"
+            if not emptyRequest:
+                print("path: {}".format(path))
 
-            mqttManager.sendState(state)
-    except Exception as e:
-        print("> sendMqttState exception: {}".format(e))
-
-
-def heartbeat(timer):
-    if isStartupDelayEllapsed:
-        wifiManager.checkConnection()
-
-    handleWeb()
-
-    if isStationConnected:
-        dnsServer.processPackets()
-
-    if isMqttBrokerFound:
-        checkForMqttMessage()
-
-    if motorManager.checkStoppedByIrSensor():
-        sendMqttState()
-
-
-def startupDelayEllapsed(timer):
-    global isStartupDelayEllapsed
-    isStartupDelayEllapsed = True
-
-
-def checkWifiConnection(timer):
-    global isStationConnected
-    global isMqttBrokerFound
-
-    try:
-        if station.isconnected():
-            if not isStationConnected:
-                isStationConnected = True
-
-                localIp = station.ifconfig()[0]
-
-                print("ip: " + localIp)
-
-                dnsServer.connect(localIp, "{}-{}".format(PUBLIC_NAME, netId))
-
-                nestorIp = dnsServer.resolve_mdns_address(MQTT_BROKER_NAME)
-
-                if nestorIp != None:
-                    isMqttBrokerFound = True
-                    nestorIp = "{}.{}.{}.{}".format(*nestorIp)
-                    mqttManager.connect(nestorIp, netId)
-                    mqttManager.sendLog("IP assigned: {}".format(localIp))
-                    sendMqttState()
+                if path == "/index.html":
+                    _index(client)
                 else:
-                    isMqttBrokerFound = False
+                    _index2(client)
+        except Exception as e:
+            print("> _pollWebServer exception: {}".format(e))
 
-                Blink().flash()
-        else:
-            isStationConnected = False
-            isMqttBrokerFound = False
-    except Exception as e:
-        print("> checkWifiConnection exception: {}".format(e))
+        await asyncio.sleep_ms(500)
+"""
 
-
-startupDelayEllapsedTimer.init(
-    period=6000, mode=Timer.ONE_SHOT, callback=startupDelayEllapsed
-)
-
-heartbeatTimer.init(period=250, mode=Timer.PERIODIC, callback=heartbeat)
-
-checkWifiConnectionTimer.init(
-    period=1000, mode=Timer.PERIODIC, callback=checkWifiConnection
-)
-
-sendMqttStateTimer.init(period=30000, mode=Timer.PERIODIC, callback=sendMqttState)
+loop = asyncio.get_event_loop()
+# loop.create_task(_pollWebServer())
+loop.run_forever()
+loop.close()
