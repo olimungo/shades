@@ -9,10 +9,10 @@ class Time:
     _offset_hour = 0
     _offset_minute = 0
 
-    def __init__(self, loop, wifiManager):
-        self.loop = loop
+    def __init__(self, wifiManager):
         self._wifiManager = wifiManager
 
+        self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._waitForStation())
 
     async def _waitForStation(self):
@@ -45,6 +45,8 @@ class Time:
         while True:
             try:
                 ntptime.settime()
+                print("> NTP time updated at {}".format(RTC().datetime()))
+
                 await asyncio.sleep(300)
             except Exception as e:
                 print("> Update time exception: {}".format(e))

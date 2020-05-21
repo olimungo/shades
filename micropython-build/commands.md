@@ -1,6 +1,6 @@
 ### Create the image
 
-docker build -t -f Dockerfile.base micropython-base .
+docker build -f Dockerfile.base -t micropython-base2 .
 docker build -t micropython .
 
 ### Run container
