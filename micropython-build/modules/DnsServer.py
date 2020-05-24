@@ -216,33 +216,34 @@ class DnsServer:
             self._connect()
 
             while self.wifiManager.isConnectedToStation() and self.connected:
-                readers, _, _ = select([self.sock], [], [], None)
                 self._process_waiting_packets()
-
-                await asyncio.sleep_ms(500)
+                await asyncio.sleep(1)
 
             self.connected = False
 
     async def _checkUdps(self):
         while True:
             try:
-                data, address = self.udps.recvfrom(2048)
-                dnsQuery = DNSQuery(data)
+                readers, _, _ = select([self.udps], [], [], None)
 
-                self.udps.sendto(dnsQuery.response(self.wifiManager.getIp()), address)
+                if readers:
+                    data, address = self.udps.recvfrom(MAX_PACKET_SIZE)
+                    dnsQuery = DNSQuery(data)
 
-                print("> Address: {}".format(address))
-            except:
-                pass
+                    self.udps.sendto(dnsQuery.response(self.wifiManager.getIp()), address)
 
-            await asyncio.sleep_ms(300)
+                    print("> Address: {}".format(address))
+            except Exception as e:
+                print("> DnsServer._checkUdps error: {}".format(e))
+
+            await asyncio.sleep_ms(100)
 
     def _connect(self):
         try:
             self.sock = self._make_socket()
             self.connected = True
         except Exception as e:
-            print("> mDns connect error: {}".format(e))
+            print("> DnsServer._connect error: {}".format(e))
 
     def _make_socket(self):
         self.local_addr = self.wifiManager.getIp()

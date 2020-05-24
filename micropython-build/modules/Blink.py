@@ -4,7 +4,7 @@ import uasyncio as asyncio
 
 class Blink:
     loop = asyncio.get_event_loop()
-    PIN = 2  # D4
+    PIN = const(2)  # D4
     pin = Pin(PIN, Pin.OUT)
     pin.on()
 

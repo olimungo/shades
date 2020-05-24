@@ -42,22 +42,23 @@ class WebServer:
     def ok(self, client):
         print("> Send empty OK response")
 
-        client.send("HTTP/1.1 200 OK")
+        client.send("HTTP/1.1 200 OK\r\n\r\n")
         client.close()
 
     def notFound(self, client):
         print("> Send Page not found")
 
         client.send(
-            "HTTP/1.1 404 Not Found\r\n\r\nQUOD GRATIS ASSERITUR, GRATIS NEGATUR"
+            "HTTP/1.1 404 Not Found\r\n\r\nQUOD GRATIS ASSERITUR, GRATIS NEGATUR\r\n\r\n"
         )
         client.close()
 
     def redirectToIndex(self, client):
         print("> Send 302 Redirect")
         client.send("HTTP/1.1 302 Redirect\r\nLocation: index.html\r\n\r\n")
+        client.close()
 
-    def index(self, client, interpolate, closeClient=True):
+    def index(self, client, interpolate):
         print("> Send index page")
 
         file = open("index.html", "r")
@@ -75,16 +76,12 @@ class WebServer:
 
         file.close()
 
-        # Required for a regular request but the Custom Portal won't work if the client is closed
-        if closeClient:
-            client.close()
-
     def poll(self):
         request = self.poller.poll(1)
 
         if request:
             client, addr = self.webServer.accept()
-            request = client.recv(4096)
+            request = client.recv(1024)
             path, queryStringsArray = self._splitRequest(request)
 
             return False, client, path, queryStringsArray

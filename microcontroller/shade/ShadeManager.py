@@ -35,7 +35,7 @@ class ShadeManager:
     async def _pollWebServer(self):
         while True:
             try:
-                (emptyRequest, client, path, queryStringsArray,) = self.webServer.poll()
+                (emptyRequest, client, path, queryStringsArray) = self.webServer.poll()
 
                 if not emptyRequest:
                     if path == "/" or path == "/index.html":

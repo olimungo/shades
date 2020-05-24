@@ -28,8 +28,7 @@ class MqttManager:
 
             while self.dnsServer.isConnected() and self.connected:
                 self._checkMessageReceived()
-
-                await asyncio.sleep_ms(250)
+                await asyncio.sleep(1)
 
             self.connected = False
 
@@ -49,9 +48,9 @@ class MqttManager:
                 self.mqtt.connect()
                 self.mqtt.subscribe("{}/{}".format(self.commandsTopic, self.netId))
 
-                self.log("IP assigned: {}".format(self.dnsServer.getIp()))
-
                 self.connected = True
+
+                self.log("IP assigned: {}".format(self.dnsServer.getIp()))
         except Exception as e:
             print("> MQTT broker connect error: {}".format(e))
 
