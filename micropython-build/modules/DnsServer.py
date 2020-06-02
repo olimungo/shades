@@ -34,6 +34,10 @@ _TYPE_AAAA = const(28)
 _TYPE_SRV = const(33)
 _TYPE_ANY = const(255)
 
+_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS = const(5)
+_IDLE_TIME_BETWEEN_PACKETS_CHEKS = const(500)
+_IDLE_TIME_BETWEEN_UDPS_CHECKS = const(500)
+
 # Convert a dotted IPv4 address string into four bytes, with some
 # sanity checks
 def dotted_ip_to_bytes(ip):
@@ -211,13 +215,18 @@ class DnsServer:
     async def _checkMdns(self):
         while True:
             while not self.wifiManager.isConnectedToStation():
-                await asyncio.sleep(1)
+                await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
 
             self._connect()
 
+            if self.wifiManager.isConnectedToStation() and self.connected:
+                print("> mDNS server up and running")
+
             while self.wifiManager.isConnectedToStation() and self.connected:
                 self._process_waiting_packets()
-                await asyncio.sleep(1)
+                await asyncio.sleep_ms(_IDLE_TIME_BETWEEN_PACKETS_CHEKS)
+
+            print("> mDNS server down")
 
             self.connected = False
 
@@ -231,12 +240,10 @@ class DnsServer:
                     dnsQuery = DNSQuery(data)
 
                     self.udps.sendto(dnsQuery.response(self.wifiManager.getIp()), address)
-
-                    print("> Address: {}".format(address))
             except Exception as e:
                 print("> DnsServer._checkUdps error: {}".format(e))
 
-            await asyncio.sleep_ms(100)
+            await asyncio.sleep_ms(_IDLE_TIME_BETWEEN_UDPS_CHECKS)
 
     def _connect(self):
         try:
@@ -294,6 +301,12 @@ class DnsServer:
 
         A_record = pack_answer(hostname, _TYPE_A, _CLASS_IN, _DNS_TTL, ip_bytes)
         self.adverts.append(A_record)
+
+        mdns = []
+        for idx, key in enumerate(hostname):
+            mdns.append(key.decode('utf-8'))
+        
+        print("> mDNS hostname: {}".format('.'.join(mdns)))
 
     def _process_packet(self, buf, addr):
         (pkt_id, flags, qst_count, ans_count, _, _) = unpack_from("!HHHHHH", buf, 0)

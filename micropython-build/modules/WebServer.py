@@ -6,7 +6,8 @@ _HTTP_PORT = const(80)
 
 
 class WebServer:
-    def __init__(self):
+    def __init__(self, wifiManger):
+        self.wifiManager = wifiManger
         self.webServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.webServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.webServer.bind(("", _HTTP_PORT))
@@ -69,12 +70,17 @@ class WebServer:
             if data == "":
                 break
 
-            for key in interpolate:
-                data = data.replace("%%{}%%".format(key), interpolate[key])
+            if data != "\n":
+                for key in interpolate:
+                    data = data.replace("%%{}%%".format(key), interpolate[key])
 
-            client.write(data)
+                client.write(data)
 
         file.close()
+
+        # If in Captive Portal mode (ESP as an Access Point), do not close the client
+        if self.wifiManager.isConnectedToStation():
+            client.close()
 
     def poll(self):
         request = self.poller.poll(1)

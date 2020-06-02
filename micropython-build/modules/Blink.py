@@ -1,11 +1,11 @@
 from machine import Pin
 import uasyncio as asyncio
 
+_ESP_LED = const(2) # D4
 
 class Blink:
     loop = asyncio.get_event_loop()
-    PIN = const(2)  # D4
-    pin = Pin(PIN, Pin.OUT)
+    pin = Pin(_ESP_LED, Pin.OUT)
     pin.on()
 
     async def _flash(self, onDelay, offDelay):

@@ -37,6 +37,12 @@
             height: 9rem;
         }
 
+        .button-tiny {
+            width: 8rem;
+            height: 6rem;
+            font-size: 2rem;
+        }
+
         .button-small {
             width: 12rem;
             font-size: 2rem;
@@ -126,9 +132,18 @@
             color: #1aabff;
         }
 
+        .label-small {
+            font-size: 1.5rem;
+            color: #1aabff;
+        }
+
         .align-left {
             align-self: flex-start;
             margin-left: 2rem;
+        }
+
+        .margin-right {
+            margin-right: 1rem;
         }
 
         .margin-right-large {
@@ -174,6 +189,22 @@
             width: 40rem;
         }
 
+        input.switch {
+            position: relative;
+            -webkit-appearance: none;
+            outline: none;
+            width: 11rem;
+            height: 4rem;
+            background-color: #1aabff;
+            border: 1px solid #1aabff;
+            border-radius: 5rem;
+            box-shadow: inset -7rem 0 0 0 #222;
+        }
+
+        input.switch:checked {
+            box-shadow: inset 7rem 0 0 0 #222;
+        }
+
         .connect-button {
             width: 41rem;
             font-size: 3rem;
@@ -207,7 +238,7 @@
         <div class="ip margin-bottom-huge">%%IP%%</div>
 
         <div class="align-vertical">
-            <div class="align-horizontal margin-bottom-large">
+            <div class="align-horizontal margin-bottom">
                 <button class="button-small margin-right-large" onclick="send('/action/previous')">
                     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -32 32 32" xml:space="preserve"
                         class="svg">
@@ -231,6 +262,112 @@
                         </g>
                     </svg>
                 </button>
+            </div>
+
+            <div class="label align-left margin-bottom-small">CHRONO</div>
+
+            <div class="align-vertical margin-bottom">
+                <div class="align-horizontal">
+                    <button class="button-small margin-right" class="action"
+                        onclick="send('/action/timer/start-pause')">
+                        START<br>
+                        <hr>
+                        PAUSE
+                    </button>
+
+                    <button class="button-small" class="action" onclick="sendTimer('/action/timer/reset')">
+                        RESET
+                    </button>
+                </div>
+            </div>
+
+            <div class="label align-left margin-bottom-small">TIMER</div>
+
+            <div class="align-vertical margin-bottom">
+                <div class="align-horizontal margin-bottom">
+                    <div class="label margin-right">H</div>
+
+                    <div class="align-horizontal margin-right-large">
+                        <button class="button-tiny margin-right" onclick="sendTimer('/action/timer/hour/one-more')">
+                            + 1
+                        </button>
+
+                        <button class="button-tiny" onclick="sendTimer('/action/timer/hour/one-less')">
+                            - 1
+                        </button>
+                    </div>
+
+                    <div class="align-horizontal">
+                        <button class="button-tiny margin-right" onclick="sendTimer('/action/timer/hour/five-more')">
+                            + 5
+                        </button>
+
+                        <button class="button-tiny" onclick="sendTimer('/action/timer/hour/five-less')">
+                            - 5
+                        </button>
+                    </div>
+                </div>
+
+                <div class="align-horizontal margin-bottom">
+                    <div class="label margin-right">M</div>
+
+                    <div class="align-horizontal margin-right-large">
+                        <button class="button-tiny margin-right" onclick="sendTimer('/action/timer/minute/one-more')">
+                            + 1
+                        </button>
+
+                        <button class="button-tiny" onclick="sendTimer('/action/timer/minute/one-less')">
+                            - 1
+                        </button>
+                    </div>
+
+                    <div class="align-horizontal">
+                        <button class="button-tiny margin-right" onclick="sendTimer('/action/timer/minute/five-more')">
+                            + 5
+                        </button>
+
+                        <button class="button-tiny" onclick="sendTimer('/action/timer/minute/five-less')">
+                            - 5
+                        </button>
+                    </div>
+                </div>
+
+                <div class="align-horizontal margin-bottom">
+                    <div class="label margin-right">S</div>
+
+                    <div class="align-horizontal margin-right-large">
+                        <button class="button-tiny margin-right" onclick="sendTimer('/action/timer/second/one-more')">
+                            + 1
+                        </button>
+
+                        <button class="button-tiny" onclick="sendTimer('/action/timer/second/one-less')">
+                            - 1
+                        </button>
+                    </div>
+
+                    <div class="align-horizontal">
+                        <button class="button-tiny margin-right" onclick="sendTimer('/action/timer/second/five-more')">
+                            + 5
+                        </button>
+
+                        <button class="button-tiny" onclick="sendTimer('/action/timer/second/five-less')">
+                            - 5
+                        </button>
+                    </div>
+                </div>
+
+                <div class="align-horizontal">
+                    <button class="button-small margin-right" class="action"
+                        onclick="send('/action/timer/start-pause')">
+                        START<br>
+                        <hr>
+                        PAUSE
+                    </button>
+
+                    <button class="button-small" class="action" onclick="sendTimer('/action/timer/reset')">
+                        RESET
+                    </button>
+                </div>
             </div>
 
             <button onclick="displaySettings()">

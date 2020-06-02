@@ -56,6 +56,8 @@ class SignManager:
                 (emptyRequest, client, path, queryStringsArray) = self.webServer.poll()
 
                 if not emptyRequest:
+                    self.wifiManager.webActivtityInProgress()
+                    
                     if path == "/" or path == "/index.html":
                         self._index(client)
                     elif path == "/action/previous":

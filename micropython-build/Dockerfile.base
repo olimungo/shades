@@ -55,3 +55,7 @@ RUN cd /micropython/mpy-cross && make
 RUN cd /micropython/ports/unix && make axtls && make
 
 RUN cd /micropython && make -C mpy-cross/ V=1
+
+WORKDIR /micropython/ports/esp8266
+
+RUN make

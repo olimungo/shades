@@ -4,15 +4,18 @@ from DnsServer import DnsServer
 from MqttManager import MqttManager
 from WebServer import WebServer
 from SignManager import SignManager
+import settings
 
-PUBLIC_NAME = "mungo-sign"
+PUBLIC_NAME = "sign"
 MQTT_BROKER_NAME = "nestor.local"
-BROKER_TOPIC_NAME = "signs"
+MQTT_BROKER_TOPIC_NAME = "signs"
 
-wifiManager = WifiManager(PUBLIC_NAME)
-dnsServer = DnsServer(wifiManager, PUBLIC_NAME)
-mqttManager = MqttManager(dnsServer, MQTT_BROKER_NAME, 1, BROKER_TOPIC_NAME)
-webServer = WebServer()
+netId = settings.readNetId()
+
+wifiManager = WifiManager("{}-{}".format(PUBLIC_NAME, netId))
+dnsServer = DnsServer(wifiManager, "{}-{}".format(PUBLIC_NAME, netId))
+mqttManager = MqttManager(dnsServer, MQTT_BROKER_NAME, netId, MQTT_BROKER_TOPIC_NAME)
+webServer = WebServer(wifiManager)
 
 signManager = SignManager(wifiManager, dnsServer, mqttManager, webServer)
 

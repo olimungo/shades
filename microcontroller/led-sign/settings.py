@@ -4,7 +4,7 @@ settings = []
 def createSettings():
     global settings
 
-    settingsString = "0,Unknown,0"
+    settingsString = "0,,0"
     file = open("settings.txt", "w")
     file.write(settingsString)
     file.close

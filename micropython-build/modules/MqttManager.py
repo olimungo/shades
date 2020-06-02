@@ -3,6 +3,8 @@ from umqtt.simple import MQTTClient
 from machine import unique_id
 import uasyncio as asyncio
 
+_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS = const(5)
+_IDLE_TIME_BETWEEN_CONNECTED_CHECKS = const(5)
 
 class MqttManager:
     loop = asyncio.get_event_loop()
@@ -22,14 +24,18 @@ class MqttManager:
     async def _checkConnection(self):
         while True:
             while not self.dnsServer.isConnected():
-                await asyncio.sleep(1)
+                await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
 
             self._connect()
 
+            if self.dnsServer.isConnected() and self.connected:
+                print("> MQTT server up and running")
+
             while self.dnsServer.isConnected() and self.connected:
                 self._checkMessageReceived()
-                await asyncio.sleep(1)
+                await asyncio.sleep(_IDLE_TIME_BETWEEN_CONNECTED_CHECKS)
 
+            print("> MQTT server down")
             self.connected = False
 
             await asyncio.sleep(5)

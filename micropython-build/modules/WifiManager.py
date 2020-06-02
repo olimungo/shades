@@ -2,9 +2,12 @@ import network
 import uasyncio as asyncio
 from Blink import Blink
 
+_WAIT_FOR_FLASHING_LED = const(2)
+_IDLE_TIME_BEFORE_CHECKING = const(6)
 _IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS = const(30)
-_IDLE_TIME_BETWEEN_CONNECTED_CHECKS = const(2)
+_IDLE_TIME_BETWEEN_CONNECTED_CHECKS = const(5)
 _IDLE_TIME_BETWEEN_CONNECTION_CHECKS = const(10)
+_IDLE_TIME_WHEN_DELAY_RECONNECTION = const(60)
 
 
 class WifiManager:
@@ -13,14 +16,24 @@ class WifiManager:
     loop = asyncio.get_event_loop()
     apStarted = False
     connectedToStation = False
+    delayAttemptReconnection = False
 
     def __init__(self, essidAp):
         self.essidAp = essidAp
+        self.station.active(True)
+        self.ap.active(False)
+
         self.loop.create_task(self._checkConnection())
 
     async def _checkStation(self):
         while not self.station.isconnected():
-            await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
+            if self.delayAttemptReconnection:
+                while self.delayAttemptReconnection:
+                    # delayAttemptReconnection could be set to True while waiting
+                    self.delayAttemptReconnection = False
+                    await asyncio.sleep(_IDLE_TIME_WHEN_DELAY_RECONNECTION)
+            else:
+                await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
 
             self.station.connect()
 
@@ -30,11 +43,8 @@ class WifiManager:
                 self.station.disconnect()
 
     async def _checkConnection(self):
-        self.station.active(True)
-        self.ap.active(False)
-
         # Leave some time to try to connect to the station
-        await asyncio.sleep(10)
+        await asyncio.sleep(_IDLE_TIME_BEFORE_CHECKING)
 
         if not self.station.isconnected():
             self._startAp()
@@ -48,7 +58,7 @@ class WifiManager:
 
             Blink().flash3TimesFast()
 
-            await asyncio.sleep(2)
+            await asyncio.sleep(_WAIT_FOR_FLASHING_LED)
 
             self.connectedToStation = True
 
@@ -58,6 +68,7 @@ class WifiManager:
                 await asyncio.sleep(_IDLE_TIME_BETWEEN_CONNECTED_CHECKS)
 
             self.connectedToStation = False
+
             self._startAp()
 
     def _startAp(self):
@@ -85,7 +96,11 @@ class WifiManager:
         return ip
 
     def connect(self, essid, password):
+        print("> Trying to connect to {}...".format(essid))
         self.station.connect(essid, password)
 
     def isConnectedToStation(self):
         return self.connectedToStation
+
+    def webActivtityInProgress(self):
+        self.delayAttemptReconnection = True
