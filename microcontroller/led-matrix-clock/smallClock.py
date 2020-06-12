@@ -3,7 +3,7 @@ from machine import Timer
 
 
 class SmallClock:
-    _hour1 = _hour2 = _minute1 = _minute2 = -1
+    _hour1 = _hour2 = _minute1 = _minute2 = _second = _numBars = -1
     _showColon = False
     _scrollBars = False
     _tickTimer = Timer(-1)
@@ -25,45 +25,40 @@ class SmallClock:
     def _tick(self, timer=None):
         hour1, hour2, minute1, minute2, second1, second2 = self._time.getTime()
 
+        second = second1 * 10 + second2
+        numBars = int(second / (60 / 9))  # 9 states = 8 lights + no light
+        column = self._createBar(numBars)
+
+        if second % 2:
+            colon = fonts[10]
+        else:
+            colon = fonts[11]
+
         self._checkUpdate(self._digit1, self._hour1, hour1, fonts[hour1])
         self._checkUpdate(self._digit2, self._hour2, hour2, fonts[hour2])
         self._checkUpdate(self._digit3, self._minute1, minute1, fonts[minute1])
         self._checkUpdate(self._digit4, self._minute2, minute2, fonts[minute2])
-
-        self._showColon = second2 % 2
-
-        second = second1 * 10 + second2
-        numBars = int(second / (60 / 9))  # 9 states = 8 lights + no light
-
-        buffer = self._createBar(numBars)
-
-        self._bar1.setBuffer(buffer)
-        self._bar2.setBuffer(buffer)
-
-        if second == 0:
-            self._scrollBars = True
-        else:
-            self._scrollBars = False
+        self._checkUpdate(self._bar1, self._numBars, numBars, column)
+        self._checkUpdate(self._bar2, self._numBars, numBars, column)
+        self._checkUpdate(self._colon, self._second, second, colon)
 
         self._hour1 = hour1
         self._hour2 = hour2
         self._minute1 = minute1
         self._minute2 = minute2
+        self._second = second
+        self._numBars = numBars
 
     def _refresh(self, timer=None):
         self._digit1.scroll()
         self._digit2.scroll()
-        self._digit3.scroll()
-        self._digit4.scroll()
-
-        if self._showColon:
-            self._colon.setChar(fonts[10])
-        else:
-            self._colon.setChar(fonts[11])
 
         self._colon.show()
 
-        if self._scrollBars:
+        self._digit3.scroll()
+        self._digit4.scroll()
+
+        if self._second == 0:
             self._bar1.scroll()
             self._bar2.scroll()
         else:
@@ -72,9 +67,9 @@ class SmallClock:
 
         self._board.show()
 
-    def _checkUpdate(self, digit, prevVal, newVal, char):
+    def _checkUpdate(self, elem, prevVal, newVal, value):
         if prevVal != newVal:
-            digit.setChar(char)
+            elem.setBuffer(value)
 
     def _clean(self, timer=None):
         self._board.fill(0)
@@ -92,15 +87,15 @@ class SmallClock:
         self._bar2.clean()
 
     def _createBar(self, numBars):
-        buffer = []
+        column = 0
+
+        for i in range(numBars):
+            column = (column << 1) + 1
 
         for i in range(0, 8 - numBars):
-            buffer.append(0)
+            column <<= 1
 
-        for i in range(0, numBars):
-            buffer.append(1)
-
-        return buffer
+        return column
 
     def start(self):
         self._tick()

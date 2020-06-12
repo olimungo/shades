@@ -19,10 +19,10 @@ class SignState:
 
 
 class SignManager:
-    def __init__(self, wifiManager, mDns, mqttManager, webServer):
+    def __init__(self, wifiManager, mqttManager, webServer):
         self.wifiManager = wifiManager
-        self.mDns = mDns
         self.mqttManager = mqttManager
+        self.webServer = webServer
 
         self.state = SignState.SHOW
         self.task = None
@@ -30,8 +30,6 @@ class SignManager:
         self.spi = SPI(1, baudrate=10000000)
         self.board = max7219.Matrix8x8(self.spi, Pin(Gpio.CS), 1)
         self.effectsLibrary = EffectsLibrary(self.board)
-
-        self.webServer = webServer
 
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._checkMqtt())
@@ -248,6 +246,4 @@ class SignManager:
                     self.loop.create_task(self.task)
 
             await asyncio.sleep_ms(200)
-
-            # await asyncio.sleep(1)
 

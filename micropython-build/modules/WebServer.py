@@ -1,20 +1,22 @@
-import usocket as socket
-import uselect
-import ure
+from usocket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from uselect import poll, POLLIN
+from ure import compile
+from gc import collect
 
-_HTTP_PORT = const(80)
+MAX_PACKET_SIZE = const(1024)
+HTTP_PORT = const(80)
 
 
 class WebServer:
-    def __init__(self, wifiManger):
-        self.wifiManager = wifiManger
-        self.webServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.webServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.webServer.bind(("", _HTTP_PORT))
+    def __init__(self, wifiManager):
+        self.wifiManager = wifiManager
+        self.webServer = socket(AF_INET, SOCK_STREAM)
+        self.webServer.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.webServer.bind(("", HTTP_PORT))
         self.webServer.listen(1)
 
-        self.poller = uselect.poll()
-        self.poller.register(self.webServer, uselect.POLLIN)
+        self.poller = poll()
+        self.poller.register(self.webServer, POLLIN)
 
     def _splitRequest(self, request):
         path = ""
@@ -22,7 +24,7 @@ class WebServer:
         queryStringsArray = {}
 
         try:
-            regex = ure.compile("[\r\n]")
+            regex = compile("[\r\n]")
             firstLine = str(regex.split(request)[0])
             _, url, _ = firstLine.split(" ")
 
@@ -71,8 +73,9 @@ class WebServer:
                 break
 
             if data != "\n":
-                for key in interpolate:
-                    data = data.replace("%%{}%%".format(key), interpolate[key])
+                if data.find("%%") != -1:
+                    for key in interpolate:
+                        data = data.replace("%%{}%%".format(key), interpolate[key])
 
                 client.write(data)
 
@@ -87,7 +90,10 @@ class WebServer:
 
         if request:
             client, addr = self.webServer.accept()
-            request = client.recv(1024)
+
+            collect()
+
+            request = client.recv(MAX_PACKET_SIZE)
             path, queryStringsArray = self._splitRequest(request)
 
             return False, client, path, queryStringsArray

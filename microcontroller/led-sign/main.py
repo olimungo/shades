@@ -17,7 +17,7 @@ dnsServer = DnsServer(wifiManager, "{}-{}".format(PUBLIC_NAME, netId))
 mqttManager = MqttManager(dnsServer, MQTT_BROKER_NAME, netId, MQTT_BROKER_TOPIC_NAME)
 webServer = WebServer(wifiManager)
 
-signManager = SignManager(wifiManager, dnsServer, mqttManager, webServer)
+signManager = SignManager(wifiManager, mqttManager, webServer)
 
 loop = asyncio.get_event_loop()
 loop.run_forever()

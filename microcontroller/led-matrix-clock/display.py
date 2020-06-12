@@ -15,77 +15,69 @@ fonts = [
 
 
 class Column:
-    def __init__(self, board, position, buffer):
+    def __init__(self, board, position, column):
         self._board = board
         self._position = position
-        self._pixels = []
-        self._buffer = buffer.copy()
+        self._columnToDisplay = 0
+        self._columnBuffer = column
+        self._scrollCount = 0
 
-    def setBuffer(self, buffer):
-        self._buffer = buffer.copy()
+    def setBuffer(self, column):
+        self._columnBuffer = column
+        self._scrollCount = 8
 
     def _update(self):
-        for row, px in enumerate(self._pixels):
-            self._board.pixel(self._position, row, px)
+        columnToDisplay = self._columnToDisplay
+
+        for row in range(8):
+            # Get the lowest bit (the one on the right)
+            pixel = columnToDisplay & 1
+            self._board.pixel(self._position, row, pixel)
+            
+            # Move the bits to the right (divide by 2)
+            columnToDisplay = columnToDisplay >> 1
 
     def show(self):
-        if len(self._buffer) > 0:
-            self._pixels = self._buffer.copy()
-            self._buffer = []
-            self._update()
+        self._columnToDisplay = self._columnBuffer
+        self._update()
 
     def scroll(self):
-        if len(self._buffer) > 0:
-            if len(self._pixels) > 7:
-                self._pixels.pop()
+        if self._scrollCount > 0:
+            self._scrollCount -= 1
 
-            self._pixels.insert(0, self._buffer.pop())
+            # Check if the highest bit (the one on the left) is set
+            pixel = 0
+            if self._columnBuffer & 128 > 0:
+                pixel = 1
 
-            while len(self._pixels) < 8:
-                self._pixels.append(0)
+            # Move the bits to the left (multiply by 2) and keep only the 8th first bits
+            self._columnBuffer = (self._columnBuffer << 1) & 255
+
+            # Move the bits to the left (multiply by 2), keep only the 8th first bits and set
+            # the lowest bit
+            self._columnToDisplay = ((self._columnToDisplay << 1) & 255) + pixel
 
             self._update()
 
     def clean(self):
-        self._buffer = []
-        self._pixels = []
+        self._columnBuffer = 0
+        self._columnToDisplay = 0
 
 
 class Char:
-    def __init__(self, board, startCol, buffer):
+    def __init__(self, board, startColumn, columns):
         self._board = board
-        self._startColumn = startCol
+        self._startColumn = startColumn
         self._columns = []
-        self._setColumns(buffer)
 
-    def _setColumns(self, buffer):
-        columns = []
-        for item in buffer:
-            bits = "{0:#b}".format(item)[2:]
+        for indexColumn in range(len(columns)):
+            self._columns.append(Column(self._board, self._startColumn + indexColumn, []))
 
-            column = []
-            for bit in bits:
-                column.append(int(bit))
+        self.setBuffer(columns)
 
-            column.reverse()
-
-            while len(column) < 11:
-                column.append(0)
-
-            columns.append(column)
-
-        emptyCols = len(self._columns) == 0
-
+    def setBuffer(self, columns):
         for indexColumn, column in enumerate(columns):
-            if emptyCols:
-                self._columns.append(
-                    Column(self._board, self._startColumn + indexColumn, column)
-                )
-            else:
-                self._columns[indexColumn].setBuffer(column)
-
-    def setChar(self, buffer):
-        self._setColumns(buffer)
+            self._columns[indexColumn].setBuffer(column)
 
     def show(self):
         for column in self._columns:

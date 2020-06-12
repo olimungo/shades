@@ -1,19 +1,15 @@
-import sys
-import time
+from time import ticks_ms, ticks_diff
 from select import select
 from ustruct import pack_into, unpack_from
-import socket
+from usocket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, IPPROTO_IP, IP_ADD_MEMBERSHIP
 import uasyncio as asyncio
+from gc import collect
 
-# The biggest packet we will process
-MAX_PACKET_SIZE = const(1024)
+_MAX_PACKET_SIZE = const(512)
+_MAX_NAME_SEARCH = const(20)
 
-MAX_NAME_SEARCH = const(20)
-
-# DNS constants
 _MDNS_ADDR = "224.0.0.251"
 _MDNS_PORT = const(5353)
-_UDPS_PORT = const(53)
 _DNS_TTL = const(2 * 60)  # two minute default TTL
 
 _FLAGS_QR_MASK = const(0x8000)  # query response mask
@@ -36,7 +32,6 @@ _TYPE_ANY = const(255)
 
 _IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS = const(5)
 _IDLE_TIME_BETWEEN_PACKETS_CHEKS = const(500)
-_IDLE_TIME_BETWEEN_UDPS_CHECKS = const(500)
 
 # Convert a dotted IPv4 address string into four bytes, with some
 # sanity checks
@@ -166,38 +161,7 @@ def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
     return q_class == r_class or q_class == _TYPE_ANY
 
 
-class DNSQuery:
-    def __init__(self, data):
-        self.data = data
-        self.domain = ""
-
-        m = data[2]
-        tipo = (m >> 3) & 15
-
-        if tipo == 0:
-            ini = 12
-            lon = data[ini]
-
-            while lon != 0:
-                self.domain += data[ini + 1 : ini + lon + 1].decode("utf-8") + "."
-                ini += lon + 1
-                lon = data[ini]
-
-    def response(self, ip):
-        packet = b""
-
-        if self.domain:
-            packet += self.data[:2] + b"\x81\x80"
-            packet += self.data[4:6] + self.data[4:6] + b"\x00\x00\x00\x00"
-            packet += self.data[12:]
-            packet += b"\xc0\x0c"
-            packet += b"\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04"
-            packet += bytes(map(int, ip.split(".")))
-
-        return packet
-
-
-class DnsServer:
+class mDnsServer:
     loop = asyncio.get_event_loop()
     connected = False
 
@@ -205,12 +169,7 @@ class DnsServer:
         self.wifiManager = wifiManager
         self.hostname = hostname
 
-        self.udps = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udps.setblocking(False)
-        self.udps.bind(("", _UDPS_PORT))
-
         self.loop.create_task(self._checkMdns())
-        self.loop.create_task(self._checkUdps())
 
     async def _checkMdns(self):
         while True:
@@ -230,39 +189,24 @@ class DnsServer:
 
             self.connected = False
 
-    async def _checkUdps(self):
-        while True:
-            try:
-                readers, _, _ = select([self.udps], [], [], None)
-
-                if readers:
-                    data, address = self.udps.recvfrom(MAX_PACKET_SIZE)
-                    dnsQuery = DNSQuery(data)
-
-                    self.udps.sendto(dnsQuery.response(self.wifiManager.getIp()), address)
-            except Exception as e:
-                print("> DnsServer._checkUdps error: {}".format(e))
-
-            await asyncio.sleep_ms(_IDLE_TIME_BETWEEN_UDPS_CHECKS)
-
     def _connect(self):
         try:
             self.sock = self._make_socket()
             self.connected = True
         except Exception as e:
-            print("> DnsServer._connect error: {}".format(e))
+            print("> mDnsServer._connect error: {}".format(e))
 
     def _make_socket(self):
         self.local_addr = self.wifiManager.getIp()
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s = socket(AF_INET, SOCK_DGRAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
         member_info = dotted_ip_to_bytes(_MDNS_ADDR) + dotted_ip_to_bytes(
             self.local_addr
         )
 
-        s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, member_info)
+        s.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, member_info)
 
         s.bind(("", _MDNS_PORT))
 
@@ -287,7 +231,7 @@ class DnsServer:
 
         basename = hostname[0]
 
-        for i in range(MAX_NAME_SEARCH):
+        for i in range(_MAX_NAME_SEARCH):
             if i != 0:
                 hostname[0] = basename + b"-" + str(i)
 
@@ -296,10 +240,11 @@ class DnsServer:
             if not addr or addr == ip_bytes:
                 break
 
-            if not find_vacant or i == MAX_NAME_SEARCH - 1:
+            if not find_vacant or i == _MAX_NAME_SEARCH - 1:
                 raise ValueError("Name in use")
 
         A_record = pack_answer(hostname, _TYPE_A, _CLASS_IN, _DNS_TTL, ip_bytes)
+
         self.adverts.append(A_record)
 
         mdns = []
@@ -310,9 +255,11 @@ class DnsServer:
 
     def _process_packet(self, buf, addr):
         (pkt_id, flags, qst_count, ans_count, _, _) = unpack_from("!HHHHHH", buf, 0)
+
         o = 12
         matches = []
         reply_len = 12
+
         for i in range(qst_count):
             for a in self.adverts:
                 if compare_q_and_a(buf, o, a):
@@ -334,6 +281,7 @@ class DnsServer:
             self._reply_buffer = memoryview(bytearray(reply_len))
 
         buf = self._reply_buffer
+
         pack_into(
             "!HHHHHH",
             buf,
@@ -345,7 +293,9 @@ class DnsServer:
             0,
             0,
         )
+
         o = 12
+
         for a in matches:
             l = len(a)
             buf[o : o + l] = a
@@ -357,12 +307,17 @@ class DnsServer:
 
     def _process_waiting_packets(self):
         while True:
-            readers, _, _ = select([self.sock], [], [], 0)
+            try:
+                readers, _, _ = select([self.sock], [], [], 0)
+            except Exception as e:
+                print("> mDnsServer._process_waiting_packets error: {}".format(e))
 
             if not readers:
                 break
 
-            buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
+            collect()
+
+            buf, addr = self.sock.recvfrom(_MAX_PACKET_SIZE)
 
             if buf and addr[0] != self.local_addr:
                 try:
@@ -385,13 +340,18 @@ class DnsServer:
             for i in range(retry_count):
                 if self.answered:
                     break
+
                 self.sock.sendto(p, (_MDNS_ADDR, _MDNS_PORT))
-                timeout = time.ticks_ms() + (250 if fast else 1000)
+                timeout = ticks_ms() + (250 if fast else 1000)
+
                 while not self.answered:
-                    sel_time = time.ticks_diff(timeout, time.ticks_ms())
+                    sel_time = ticks_diff(timeout, ticks_ms())
+
                     if sel_time <= 0:
                         break
+
                     (rr, _, _) = select([self.sock], [], [], sel_time / 1000.0)
+
                     if rr:
                         self._process_waiting_packets()
         finally:
@@ -406,9 +366,11 @@ class DnsServer:
             def _answer_handler(a):
                 addr_offset = skip_name_at(a, 0) + 10
                 answer.append(a[addr_offset : addr_offset + 4])
+
                 return True
 
             self._handle_question(q, _answer_handler, fast)
+
             return bytes(answer[0]) if answer else None
 
     def isConnected(self):

@@ -5,7 +5,7 @@ import ntptime
 import uasyncio as asyncio
 
 
-class Time:
+class NtpTime:
     _offset_hour = 0
     _offset_minute = 0
 
@@ -16,7 +16,7 @@ class Time:
         self.loop.create_task(self._waitForStation())
 
     async def _waitForStation(self):
-        await asyncio.sleep(4)
+        await asyncio.sleep(15)
 
         while not self._wifiManager.isConnectedToStation():
             await asyncio.sleep(2)

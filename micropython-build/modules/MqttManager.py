@@ -11,8 +11,8 @@ class MqttManager:
     connected = False
     messages = []
 
-    def __init__(self, dnsServer, brokerName, netId, topicName):
-        self.dnsServer = dnsServer
+    def __init__(self, mDnsServer, brokerName, netId, topicName):
+        self.mDnsServer = mDnsServer
         self.brokerName = brokerName
         self.netId = netId
         self.commandsTopic = "commands/{}".format(topicName)
@@ -23,15 +23,15 @@ class MqttManager:
 
     async def _checkConnection(self):
         while True:
-            while not self.dnsServer.isConnected():
+            while not self.mDnsServer.isConnected():
                 await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
 
             self._connect()
 
-            if self.dnsServer.isConnected() and self.connected:
+            if self.mDnsServer.isConnected() and self.connected:
                 print("> MQTT server up and running")
 
-            while self.dnsServer.isConnected() and self.connected:
+            while self.mDnsServer.isConnected() and self.connected:
                 self._checkMessageReceived()
                 await asyncio.sleep(_IDLE_TIME_BETWEEN_CONNECTED_CHECKS)
 
@@ -44,7 +44,7 @@ class MqttManager:
         try:
             clientId = ubinascii.hexlify(unique_id())
 
-            brokerIp = self.dnsServer.resolve_mdns_address(self.brokerName)
+            brokerIp = self.mDnsServer.resolve_mdns_address(self.brokerName)
 
             if brokerIp != None:
                 brokerIp = "{}.{}.{}.{}".format(*brokerIp)
@@ -56,7 +56,7 @@ class MqttManager:
 
                 self.connected = True
 
-                self.log("IP assigned: {}".format(self.dnsServer.getIp()))
+                self.log("IP assigned: {}".format(self.mDnsServer.getIp()))
         except Exception as e:
             print("> MQTT broker connect error: {}".format(e))
 
