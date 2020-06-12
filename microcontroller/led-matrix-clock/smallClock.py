@@ -52,9 +52,7 @@ class SmallClock:
     def _refresh(self, timer=None):
         self._digit1.scroll()
         self._digit2.scroll()
-
         self._colon.show()
-
         self._digit3.scroll()
         self._digit4.scroll()
 

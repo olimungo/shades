@@ -2,7 +2,7 @@ from machine import Pin, SPI
 import uasyncio as asyncio
 import max7219
 from NtpTime import NtpTime
-from SmallClock import SmallClock
+from smallClock import SmallClock
 import settings
 
 class Gpio:
@@ -26,10 +26,10 @@ class ClockManager:
         self.smallClock.start()
 
         self.loop = asyncio.get_event_loop()
-        # self.loop.create_task(self._checkMqtt())
+        self.loop.create_task(self._checkMqtt())
         self.loop.create_task(self._pollWebServer())
-        # self.loop.create_task(self._sendState())
-        # self.loop.create_task(self._checkState())
+        self.loop.create_task(self._sendState())
+        self.loop.create_task(self._checkState())
 
     async def _checkMqtt(self):
         while True:
@@ -155,5 +155,5 @@ class ClockManager:
             #         self.task = self._stateOnOff(0)
             #         self.loop.create_task(self.task)
 
-            await asyncio.sleep_ms(200)
+            await asyncio.sleep_ms(500)
 
