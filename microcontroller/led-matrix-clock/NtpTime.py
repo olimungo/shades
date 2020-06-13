@@ -1,8 +1,7 @@
-import urequests
+from urequests import get
 from machine import RTC
-import network
-import ntptime
-import uasyncio as asyncio
+from ntptime import settime
+from uasyncio import get_event_loop, sleep
 
 
 class NtpTime:
@@ -12,14 +11,14 @@ class NtpTime:
     def __init__(self, wifiManager):
         self._wifiManager = wifiManager
 
-        self.loop = asyncio.get_event_loop()
+        self.loop = get_event_loop()
         self.loop.create_task(self._waitForStation())
 
     async def _waitForStation(self):
-        await asyncio.sleep(15)
+        await sleep(15)
 
         while not self._wifiManager.isConnectedToStation():
-            await asyncio.sleep(2)
+            await sleep(2)
 
         self.loop.create_task(self._getOffset())
         self.loop.create_task(self._updateTime())
@@ -27,7 +26,7 @@ class NtpTime:
     async def _getOffset(self):
         while True:
             if self._wifiManager.isConnectedToStation():
-                offset = urequests.get("http://worldtimeapi.org/api/ip").json()[
+                offset = get("http://worldtimeapi.org/api/ip").json()[
                     "utc_offset"
                 ]
 
@@ -37,20 +36,20 @@ class NtpTime:
                 if offset[:1] == "-":
                     self._offset_hour = -self._offset_hour
 
-                await asyncio.sleep(3600)
+                await sleep(3600)
             else:
-                await asyncio.sleep(60)
+                await sleep(60)
 
     async def _updateTime(self):
         while True:
             try:
-                ntptime.settime()
+                settime()
                 print("> NTP time updated at {}".format(RTC().datetime()))
 
-                await asyncio.sleep(300)
+                await sleep(300)
             except Exception as e:
                 print("> Update time exception: {}".format(e))
-                await asyncio.sleep(30)
+                await sleep(30)
 
     def getTime(self):
         _, _, _, _, hour, minute, second, _ = RTC().datetime()

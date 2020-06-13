@@ -1,7 +1,7 @@
 from usocket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from uselect import poll, POLLIN
 from ure import compile
-from gc import collect
+from gc import collect, mem_free
 
 MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
@@ -93,8 +93,17 @@ class WebServer:
 
             collect()
 
-            request = client.recv(MAX_PACKET_SIZE)
-            path, queryStringsArray = self._splitRequest(request)
+            try:
+                request = client.recv(MAX_PACKET_SIZE)
+
+                path, queryStringsArray = self._splitRequest(request)
+
+                del request
+                collect()
+            except Exception as e:
+                print("> WebServer.poll exception: {}".format(e))
+                print("> Mem free at the moment of the error: {}".format(mem_free()))
+                return True, False, False, False
 
             return False, client, path, queryStringsArray
         else:

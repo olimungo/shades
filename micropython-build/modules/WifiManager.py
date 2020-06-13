@@ -1,5 +1,6 @@
-import network
-import uasyncio as asyncio
+from network import WLAN, STA_IF, AP_IF, AUTH_OPEN
+from uasyncio import get_event_loop, sleep
+from UdpsServer import UdpsServer
 from Blink import Blink
 
 _WAIT_FOR_FLASHING_LED = const(2)
@@ -9,9 +10,9 @@ _IDLE_TIME_BETWEEN_CONNECTED_CHECKS = const(5)
 
 
 class WifiManager:
-    station = network.WLAN(network.STA_IF)
-    ap = network.WLAN(network.AP_IF)
-    loop = asyncio.get_event_loop()
+    station = WLAN(STA_IF)
+    ap = WLAN(AP_IF)
+    loop = get_event_loop()
     apStarted = False
     connectedToStation = False
 
@@ -19,33 +20,34 @@ class WifiManager:
         self.essidAp = essidAp
         self.station.active(True)
         self.ap.active(False)
+        self.udpsServer = UdpsServer(self)
 
         self.loop.create_task(self._checkConnection())
 
     async def _checkConnection(self):
         # Leave some time to try to connect to the station
-        await asyncio.sleep(_IDLE_TIME_BEFORE_CHECKING)
+        await sleep(_IDLE_TIME_BEFORE_CHECKING)
 
         if not self.station.isconnected():
             self._startAp()
 
         while True:
             while not self.station.isconnected():
-                await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
+                await sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
 
             if self.apStarted:
                 self._stopAp()
 
             Blink().flash3TimesFast()
 
-            await asyncio.sleep(_WAIT_FOR_FLASHING_LED)
+            await sleep(_WAIT_FOR_FLASHING_LED)
 
             self.connectedToStation = True
 
             print("> IP: {}".format(self.getIp()))
 
             while self.station.isconnected():
-                await asyncio.sleep(_IDLE_TIME_BETWEEN_CONNECTED_CHECKS)
+                await sleep(_IDLE_TIME_BETWEEN_CONNECTED_CHECKS)
 
             self.connectedToStation = False
 
@@ -56,7 +58,7 @@ class WifiManager:
 
         self.ap.active(True)
         self.apStarted = True
-        self.ap.config(essid=self.essidAp, authmode=network.AUTH_OPEN)
+        self.ap.config(essid=self.essidAp, authmode=AUTH_OPEN)
 
     def _stopAp(self):
         print("> AP available, shutting down own AP")

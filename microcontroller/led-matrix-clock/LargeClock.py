@@ -18,10 +18,15 @@ class LargeClock:
         self._digit4 = Char(board, 17, fonts[0])
         self._digit5 = Char(board, 23, fonts[0])
         self._digit6 = Char(board, 28, fonts[0])
-        self._colon1 = Char(board, 10, fonts[10])
+        self._colon = Char(board, 10, fonts[10])
 
     def _tick(self, timer=None):
         hour1, hour2, minute1, minute2, second1, second2 = self._time.getTime()
+
+        if second2 % 2:
+            colon = fonts[10]
+        else:
+            colon = fonts[11]
 
         self._checkUpdate(self._digit1, self._hour1, hour1, fonts[hour1])
         self._checkUpdate(self._digit2, self._hour2, hour2, fonts[hour2])
@@ -29,13 +34,7 @@ class LargeClock:
         self._checkUpdate(self._digit4, self._minute2, minute2, fonts[minute2])
         self._checkUpdate(self._digit5, self._second1, second1, fonts[second1])
         self._checkUpdate(self._digit6, self._second2, second2, fonts[second2])
-
-        if second2 % 2:
-            self._colon1.setChar(fonts[10])
-        else:
-            self._colon1.setChar(fonts[11])
-
-        self._colon1.show()
+        self._checkUpdate(self._colon, self._second2, second2, colon)
 
         self._hour1 = hour1
         self._hour2 = hour2
@@ -47,6 +46,7 @@ class LargeClock:
     def _refresh(self, timer=None):
         self._digit1.scroll()
         self._digit2.scroll()
+        self._colon.show()
         self._digit3.scroll()
         self._digit4.scroll()
         self._digit5.scroll()
@@ -54,9 +54,9 @@ class LargeClock:
 
         self._board.show()
 
-    def _checkUpdate(self, digit, prevVal, newVal, char):
+    def _checkUpdate(self, elem, prevVal, newVal, value):
         if prevVal != newVal:
-            digit.setChar(char)
+            elem.setBuffer(value)
 
     def _clean(self, timer=None):
         self._board.fill(0)
@@ -68,6 +68,7 @@ class LargeClock:
 
         self._digit1.clean()
         self._digit2.clean()
+        self._colon.clean()
         self._digit3.clean()
         self._digit4.clean()
         self._digit5.clean()

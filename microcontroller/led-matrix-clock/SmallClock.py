@@ -5,7 +5,6 @@ from machine import Timer
 class SmallClock:
     _hour1 = _hour2 = _minute1 = _minute2 = _second = _numBars = -1
     _showColon = False
-    _scrollBars = False
     _tickTimer = Timer(-1)
     _refreshTimer = Timer(-1)
     _cleanTimer = Timer(-1)
@@ -29,7 +28,7 @@ class SmallClock:
         numBars = int(second / (60 / 9))  # 9 states = 8 lights + no light
         column = self._createBar(numBars)
 
-        if second % 2:
+        if second2 % 2:
             colon = fonts[10]
         else:
             colon = fonts[11]
@@ -79,6 +78,7 @@ class SmallClock:
 
         self._digit1.clean()
         self._digit2.clean()
+        self._colon.clean()
         self._digit3.clean()
         self._digit4.clean()
         self._bar1.clean()

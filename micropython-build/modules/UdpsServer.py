@@ -1,9 +1,9 @@
 from select import select
 from usocket import socket, AF_INET, SOCK_DGRAM
-import uasyncio as asyncio
+from uasyncio import get_event_loop, sleep_ms
 from gc import collect
 
-_MAX_PACKET_SIZE = const(896)
+_MAX_PACKET_SIZE = const(768)
 _UDPS_PORT = const(53)
 _IDLE_TIME_BETWEEN_CHECKS = const(500)
 
@@ -39,7 +39,7 @@ class DNSQuery:
 
 
 class UdpsServer:
-    loop = asyncio.get_event_loop()
+    loop = get_event_loop()
     connected = False
 
     def __init__(self, wifiManager):
@@ -61,7 +61,10 @@ class UdpsServer:
 
                     data, address = self.udps.recvfrom(_MAX_PACKET_SIZE)
                     self.udps.sendto(DNSQuery(data).response(self.wifiManager.getIp()), address)
+
+                    del data
+                    collect()
             except Exception as e:
                 print("> UdpsServer._checkUdps error: {}".format(e))
 
-            await asyncio.sleep_ms(_IDLE_TIME_BETWEEN_CHECKS)
+            await sleep_ms(_IDLE_TIME_BETWEEN_CHECKS)

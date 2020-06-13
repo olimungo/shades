@@ -2,7 +2,7 @@ from time import ticks_ms, ticks_diff
 from select import select
 from ustruct import pack_into, unpack_from
 from usocket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, IPPROTO_IP, IP_ADD_MEMBERSHIP
-import uasyncio as asyncio
+from uasyncio import get_event_loop, sleep_ms, sleep
 from gc import collect
 
 _MAX_PACKET_SIZE = const(512)
@@ -162,7 +162,7 @@ def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
 
 
 class mDnsServer:
-    loop = asyncio.get_event_loop()
+    loop = get_event_loop()
     connected = False
 
     def __init__(self, wifiManager, hostname):
@@ -174,7 +174,7 @@ class mDnsServer:
     async def _checkMdns(self):
         while True:
             while not self.wifiManager.isConnectedToStation():
-                await asyncio.sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
+                await sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
 
             self._connect()
 
@@ -183,7 +183,7 @@ class mDnsServer:
 
             while self.wifiManager.isConnectedToStation() and self.connected:
                 self._process_waiting_packets()
-                await asyncio.sleep_ms(_IDLE_TIME_BETWEEN_PACKETS_CHEKS)
+                await sleep_ms(_IDLE_TIME_BETWEEN_PACKETS_CHEKS)
 
             print("> mDNS server down")
 
@@ -322,6 +322,9 @@ class mDnsServer:
             if buf and addr[0] != self.local_addr:
                 try:
                     self._process_packet(memoryview(buf), addr)
+
+                    del buf
+                    collect()
                 except IndexError:
                     print("Index error processing packet; probably malformed data")
                 except Exception as e:
