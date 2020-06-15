@@ -26,17 +26,21 @@ class NtpTime:
     async def _getOffset(self):
         while True:
             if self._wifiManager.isConnectedToStation():
-                offset = get("http://worldtimeapi.org/api/ip").json()[
-                    "utc_offset"
-                ]
+                try:
+                    offset = get("http://worldtimeapi.org/api/ip").json()[
+                        "utc_offset"
+                    ]
 
-                self._offset_hour = int(offset[1:3])
-                self._offset_minute = int(offset[4:6])
+                    self._offset_hour = int(offset[1:3])
+                    self._offset_minute = int(offset[4:6])
 
-                if offset[:1] == "-":
-                    self._offset_hour = -self._offset_hour
+                    if offset[:1] == "-":
+                        self._offset_hour = -self._offset_hour
 
-                await sleep(3600)
+                    await sleep(3600)
+                except Exception as e:
+                    print("> NtpTime._getOffset error: {}".format(e))
+                    await sleep(60)
             else:
                 await sleep(60)
 
@@ -48,7 +52,7 @@ class NtpTime:
 
                 await sleep(300)
             except Exception as e:
-                print("> Update time exception: {}".format(e))
+                print("> NtpTime._updateTime error: {}".format(e))
                 await sleep(30)
 
     def getTime(self):
