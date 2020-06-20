@@ -16,8 +16,10 @@ class WifiManager:
     apStarted = False
     connectedToStation = False
 
-    def __init__(self, essidAp):
+    def __init__(self, essidAp, netId):
         self.essidAp = essidAp
+        
+        self.setNetId(netId)
         self.station.active(True)
         self.ap.active(False)
         self.udpsServer = UdpsServer(self)
@@ -29,6 +31,7 @@ class WifiManager:
         await sleep(_IDLE_TIME_BEFORE_CHECKING)
 
         if not self.station.isconnected():
+            print("> No Access Point found...")
             self._startAp()
 
         while True:
@@ -51,17 +54,18 @@ class WifiManager:
 
             self.connectedToStation = False
 
+            print("> Connection to Access Point broken...")
             self._startAp()
 
     def _startAp(self):
-        print("> No AP found... starting own AP: {}".format(self.essidAp))
+        print("> Starting own Access Point: {}".format(self.publicName))
 
         self.ap.active(True)
         self.apStarted = True
-        self.ap.config(essid=self.essidAp, authmode=AUTH_OPEN)
+        self.ap.config(essid=self.publicName, authmode=AUTH_OPEN)
 
     def _stopAp(self):
-        print("> AP available, shutting down own AP")
+        print("> Shutting down own Access Point")
 
         self.apStarted = False
         self.ap.active(False)
@@ -80,3 +84,8 @@ class WifiManager:
 
     def isConnectedToStation(self):
         return self.connectedToStation
+
+    def setNetId(self, netId):
+        self.netId = netId
+        self.publicName = "{}-{}".format(self.essidAp, self.netId)
+

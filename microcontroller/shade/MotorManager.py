@@ -1,12 +1,13 @@
-from machine import Pin, ADC, Timer
+from machine import Pin, ADC, Timer, I2C
+import d1motor
 import settings
 
 
 class Gpio:
-    MOTOR_CTL1 = 13  # D7 - Control motor direction
-    MOTOR_CTL2 = 15  # D8 - Control motor direction
+    I2C_SCL = 5 # D1
+    I2C_SDA = 4 # D2
     IR_SENSOR = 0  # A0 - ADC
-    IR_POWER = 5  # D1
+    IR_POWER = 16  # D0
     STDBY_PWM_POWER = 4  # D2
     IR_SENSOR_THRESHOLD_HIGH = 150
 
@@ -36,42 +37,32 @@ class ShadeState:
 class MotorManager:
     motorState = MotorState().STOPPED
     shadeState = ShadeState().UNKNOWN
-    ctl1 = Pin(Gpio().MOTOR_CTL1, Pin.OUT)
-    ctl2 = Pin(Gpio().MOTOR_CTL2, Pin.OUT)
+    i2c = I2C(scl=Pin(Gpio().I2C_SCL), sda=Pin(Gpio().I2C_SDA))
+    motor = d1motor.Motor(0, i2c)
     irSensor = ADC(Gpio().IR_SENSOR)
     irPower = Pin(Gpio().IR_POWER, Pin.OUT)
-    stdbPmwPower = Pin(Gpio().STDBY_PWM_POWER, Pin.OUT)
     irCheckTimer = Timer(-1)
-    disableTimer = Timer(-1)
     motorCheckTimer = Timer(-1)
     forceMoving = 0
     stoppedByIrSensor = False
+    speed = 10000 
 
     def __init__(self):
         motorReversed = settings.readMotorReversed()
 
         if motorReversed == "0":
-            self.ctl1 = Pin(Gpio().MOTOR_CTL2, Pin.OUT)
-            self.ctl2 = Pin(Gpio().MOTOR_CTL1, Pin.OUT)
+            self.speed = -10000
 
-        self.ctl1.off()
-        self.ctl2.off()
-        self.stdbPmwPower.off()
+        self.motor.brake()
         self.irPower.off()
 
     def _disable(self, timer):
-        self.stdbPmwPower.off()
         self.irPower.off()
 
     def _stop(self):
         self.irCheckTimer.deinit()
-
         self.motorState = MotorState().STOPPED
-        self.ctl1.on()
-        self.ctl2.on()
-
-        # Allow the motor to physically stop before cutting the power
-        self.disableTimer.init(period=300, mode=Timer.ONE_SHOT, callback=self._disable)
+        self.motor.brake()
 
     def _irCheck(self, timer):
         value = self.irSensor.read()
@@ -91,13 +82,10 @@ class MotorManager:
 
     def _moveMotor(self, direction):
         if direction == MotorDirection().CLOCKWISE:
-            self.ctl1.on()
-            self.ctl2.off()
+            self.motor.speed(self.speed)
         else:
-            self.ctl1.off()
-            self.ctl2.on()
+            self.motor.speed(-self.speed)
 
-        self.stdbPmwPower.on()
         self.irPower.on()
 
         if self.shadeState == ShadeState().IN_BETWEEN:
@@ -113,11 +101,9 @@ class MotorManager:
         motorReversed = settings.readMotorReversed()
 
         if motorReversed == "0":
-            self.ctl1 = Pin(Gpio().MOTOR_CTL2, Pin.OUT)
-            self.ctl2 = Pin(Gpio().MOTOR_CTL1, Pin.OUT)
+            self.speed = -10000
         else:
-            self.ctl1 = Pin(Gpio().MOTOR_CTL1, Pin.OUT)
-            self.ctl2 = Pin(Gpio().MOTOR_CTL2, Pin.OUT)
+            self.speed = 10000
 
     def goUp(self):
         if self.shadeState == ShadeState().TOP:

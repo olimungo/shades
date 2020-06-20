@@ -4,9 +4,9 @@ import settings
 
 
 class ShadeManager:
-    def __init__(self, wifiManager, mDns, mqttManager, webServer):
+    def __init__(self, wifiManager, mDnsServer, mqttManager, webServer):
         self.wifiManager = wifiManager
-        self.mDns = mDns
+        self.mDnsServer = mDnsServer
         self.mqttManager = mqttManager
 
         self.webServer = webServer
@@ -96,7 +96,7 @@ class ShadeManager:
         except Exception as e:
             print("> ShadeManager._sendMqttState exception: {}".format(e))
 
-    def _index(self, client, closeClient=True):
+    def _index(self, client):
         ip = self.wifiManager.getIp()
         netId, essid, motorReversed, group = settings.readSettings()
 
@@ -113,7 +113,7 @@ class ShadeManager:
             "GROUP": group,
         }
 
-        self.webServer.index(client, interpolate, closeClient)
+        self.webServer.index(client, interpolate)
 
     def _goUp(self, client):
         self.motorManager.goUp()
@@ -132,7 +132,11 @@ class ShadeManager:
 
     def _setNet(self, client, queryStringsArray):
         if "id" in queryStringsArray and not queryStringsArray["id"] == "":
-            settings.writeNetId(queryStringsArray["id"])
+            netId = queryStringsArray["id"]
+            settings.writeNetId(netId)
+
+            self.wifiManager.setNetId(netId)
+            self.mDnsServer.setNetId(netId)
 
         self.webServer.ok(client)
 

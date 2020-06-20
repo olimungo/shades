@@ -165,9 +165,10 @@ class mDnsServer:
     loop = get_event_loop()
     connected = False
 
-    def __init__(self, wifiManager, hostname):
+    def __init__(self, wifiManager, hostname, netId):
         self.wifiManager = wifiManager
         self.hostname = hostname
+        self.setNetId(netId)
 
         self.loop.create_task(self._checkMdns())
 
@@ -191,6 +192,8 @@ class mDnsServer:
 
     def _connect(self):
         try:
+            collect()
+
             self.sock = self._make_socket()
             self.connected = True
         except Exception as e:
@@ -219,7 +222,7 @@ class mDnsServer:
         return s
 
     def _advertise_hostname(self, find_vacant=True):
-        hostname = check_name(self.hostname)
+        hostname = check_name(self.publicName)
         n = len(hostname)
 
         if n == 1:
@@ -381,3 +384,10 @@ class mDnsServer:
 
     def getIp(self):
         return self.wifiManager.getIp()
+
+    def setNetId(self, netId):
+        self.netId = netId
+        self.publicName = "{}-{}".format(self.hostname, self.netId)
+
+        if (self.connected):
+            self._connect()
