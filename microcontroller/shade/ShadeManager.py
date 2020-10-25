@@ -58,7 +58,7 @@ class ShadeManager:
                         self.webServer.ok(client)
                     else:
                         # Probably a request from Android or IOS for the Custom Portal.
-                        # Anyways, return a redirect to the index and do not close the client connection.
+                        # Anyways, return a redirect to the index if the path is unknown.
                         self.webServer.redirectToIndex(client)
             except Exception as e:
                 print("> ShadeManager._pollWebServer exception: {}".format(e))
