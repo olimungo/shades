@@ -11,7 +11,7 @@
             font-size: 2vw;
             font-family: sans-serif;
             font-weight: 100;
-            color: #1aabff;
+            color: #e9f7ff;
             background: #222;
             margin: 1vw;
             display: flex;
@@ -24,27 +24,44 @@
         }
 
         hr {
-            border-color: #1aabff;
+            border-color: #e9f7ff;
         }
 
         button {
             border-radius: 7px;
             background: none;
             outline: none;
-            border: solid 1px #1aabff;
-            color: #1aabff;
+            border: solid 1px #e9f7ff;
+            color: #e9f7ff;
             width: 18rem;
             height: 9rem;
+            border-width: .2rem;
+        }
+
+        .button-circle {
+            width: 8rem;
+            height: 8rem;
+            font-size: 2rem;
+            border-radius: 50%;
+            border-color: #ffeaea;
+            border-width: .4rem;
         }
 
         .button-tiny {
-            width: 8rem;
-            height: 6rem;
+            width: 6rem;
+            height: 3rem;
             font-size: 2rem;
+            border-color: #ffeaea;
+            border-width: .4rem;
         }
 
         .button-small {
             width: 12rem;
+            font-size: 3rem;
+        }
+
+        .button-wide {
+            width: 18rem;
             font-size: 2rem;
         }
 
@@ -90,7 +107,7 @@
             font-weight: 400;
             width: 3.5rem;
             height: 3.5rem;
-            background-color: #1aabff;
+            background-color: #e9f7ff;
             color: #222;
             border-radius: 50%;
             margin-left: 1rem;
@@ -100,14 +117,8 @@
         }
 
         .ip {
-            padding: 0 .6rem;
-            font-size: 1.5rem;
-            font-weight: 400;
-            background-color: #1aabff;
-            color: #222;
-            border-radius: 2px;
-            width: fit-content;
-            margin-top: .5rem;
+            font-size: 2rem;
+            margin: 1rem
         }
 
         .svg {
@@ -129,12 +140,12 @@
 
         .label {
             font-size: 2.5rem;
-            color: #1aabff;
+            color: #7f8e96;
         }
 
         .label-small {
             font-size: 1.5rem;
-            color: #1aabff;
+            color: #e9f7ff;
         }
 
         .align-left {
@@ -169,14 +180,14 @@
         input[type='number'],
         input[type='password'],
         input[type='text'] {
-            border: solid 1px #1aabff;
+            border: solid 1px #e9f7ff;
             outline: none;
             background: none;
             border-radius: 25px;
             font-size: 2.3rem;
             height: 3.5rem;
             font-weight: 300;
-            color: #1aabff;
+            color: #e9f7ff;
             padding-left: 1rem;
         }
 
@@ -194,46 +205,71 @@
             font-size: 3rem;
             height: 6rem;
             color: #222;
-            background-color: #1aabff;
+            background-color: #e9f7ff;
+        }
+
+        .colon {
+            font-size: 10rem;
+            margin: 0 4rem;
         }
 
         .color-red {
-            background: red;
+            background: #ff1c1c;
         }
 
         .color-blue {
-            background: blue;
+            background: #344ee1;
         }
 
         .color-blue-violet {
-            background: blueviolet;
+            background: #a443ff;
         }
 
         .color-yellow {
-            background: yellow;
+            background: #fdeb44;
         }
 
         .color-green {
-            background: #13d713;
+            background: #61b400;
         }
 
         .color-pink {
-            background: #ffadbb;
+            background: #fd798f;
         }
 
         .color-orange {
-            background: #ff9800;
+            background: #ff7118;
         }
 
-        @media screen and (min-width: 640px) {
+        .scoreboard-red {
+            color: #ff1c1c;
+            border-color: #ff1c1c;
+        }
+
+        .scoreboard-green {
+            color: #61b400;
+            border-color: #61b400;
+        }
+
+        .footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+
+        @media screen and (min-width: 500px) {
             html {
-                font-size: 13px;
-                margin: 30px;
-                padding: 12px;
+                font-size: 10px;
+                margin: 20px;
+                padding: 8px;
             }
 
             .space-between {
-                width: 533px;
+                width: 450px;
                 margin-left: 5px;
             }
         }
@@ -241,18 +277,20 @@
 </head>
 
 <body>
+    <div class="footer">
+        <div class="ip">%%IP%%</div>
+    </div>
+
     <div id="main">
         <div class="title align-horizontal">
-            <div>Clock</div>
+            <div>CLOCK</div>
             <div id="tag-net-id" class="tag">%%NET_ID%%</div>
         </div>
-
-        <div class="ip margin-bottom">%%IP%%</div>
 
         <div class="align-vertical">
             <div class="label align-left margin-bottom-small">BRIGHTNESS</div>
 
-            <div class="align-vertical margin-bottom">
+            <div class="align-vertical margin-bottom-small">
                 <div class="align-horizontal">
                     <button class="button-small margin-right action"
                         onclick="send('/action/brightness/more')">+</button>
@@ -263,29 +301,64 @@
 
             <div class="label align-left margin-bottom-small">COLOR</div>
 
-            <div class="align-vertical margin-bottom-large">
+            <div class="align-vertical margin-bottom-small">
                 <div class="align-horizontal margin-bottom-small">
-                    <button class="button-tiny action color-pink margin-right"
+                    <button class="button-circle action color-pink margin-right"
                         onclick="send('/action/color?hex=ffadbb')"></button>
-                    <button class="button-tiny action color-orange margin-right"
+                    <button class="button-circle action color-orange margin-right"
                         onclick="send('/action/color?hex=ff9800')"></button>
-                    <button class="button-tiny action color-red margin-right"
+                    <button class="button-circle action color-red margin-right"
                         onclick="send('/action/color?hex=ff0000')"></button>
-                    <button class="button-tiny action color-blue-violet margin-right"
+                    <button class="button-circle action color-blue-violet margin-right"
                         onclick="send('/action/color?hex=8a2be2')"></button>
                 </div>
 
                 <div class="align-horizontal">
-                    <button class="button-tiny action color-blue margin-right"
+                    <button class="button-circle action color-blue margin-right"
                         onclick="send('/action/color?hex=0000ff')"></button>
-                    <button class="button-tiny action color-yellow margin-right"
+                    <button class="button-circle action color-yellow margin-right"
                         onclick="send('/action/color?hex=ffff00')"></button>
-                    <button class="button-tiny action color-green margin-right"
+                    <button class="button-circle action color-green margin-right"
                         onclick="send('/action/color?hex=13d713')"></button>
                 </div>
             </div>
 
-            <button onclick="displaySettings()">
+            <div class="label align-left margin-bottom-small">SCOREBOARD</div>
+
+            <div class="align-vertical margin-bottom-small">
+                <div class="align-horizontal margin-bottom">
+                    <div class="align-vertical">
+                        <button class="button-small action margin-bottom-small scoreboard-green"
+                            onclick="send('/action/scoreboard/green/more')">+</button>
+                        <button class="button-small action scoreboard-green"
+                            onclick="send('/action/scoreboard/green/less')">-</button>
+                    </div>
+
+                    <div class="colon">:</div>
+
+                    <div class="align-vertical">
+                        <button class="button-small action margin-bottom-small scoreboard-red"
+                            onclick="send('/action/scoreboard/red/more')">+</button>
+                        <button class="button-small action scoreboard-red"
+                            onclick="send('/action/scoreboard/red/less')">-</button>
+                    </div>
+                </div>
+
+                <div class="align-horizontal margin-bottom-small">
+                    <button class="button-wide action" onclick="send('/action/scoreboard/reset')">RESET</button>
+                </div>
+            </div>
+
+            <div class="label align-left margin-bottom-small">DISPLAY</div>
+
+            <div class="align-vertical margin-bottom-large">
+                <div class="align-horizontal margin-bottom-small">
+                    <button class="button-wide action margin-right" onclick="send('/action/clock/show')">CLOCK</button>
+                    <button class="button-wide action" onclick="send('/action/scoreboard/show')">SCOREBOARD</button>
+                </div>
+            </div>
+
+            <button onclick="displaySettings()" class="margin-bottom">
                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -3 32 37" xml:space="preserve"
                     class="svg-clog" onclick="displaySettings()">
                     <path d="M32,17.969v-4l-4.781-1.992c-0.133-0.375-0.273-0.738-0.445-1.094l1.93-4.805L25.875,3.25 
@@ -293,7 +366,7 @@
                         L3.25,6.121l1.938,4.711C5,11.219,4.848,11.613,4.703,12.02L0,14.031v4l4.707,1.961c0.145,0.406,0.301,0.801,0.488,1.188 
                         l-1.902,4.742l2.828,2.828l4.723-1.945c0.379,0.18,0.766,0.324,1.164,0.461L14.031,32h4l1.98-4.758 
                         c0.379-0.141,0.754-0.289,1.113-0.461l4.797,1.922l2.828-2.828l-1.969-4.773c0.168-0.359,0.305-0.723,0.438-1.094L32,17.969z 
-                        M15.969,22c-3.312,0-6-2.688-6-6s2.688-6,6-6s6,2.688,6,6S19.281,22,15.969,22z" fill="#1aabff" />
+                        M15.969,22c-3.312,0-6-2.688-6-6s2.688-6,6-6s6,2.688,6,6S19.281,22,15.969,22z" fill="#e9f7ff" />
                 </svg>
             </button>
         </div>
@@ -307,7 +380,7 @@
                     <path d="M28,14H8.8l4.62-4.62C13.814,8.986,14,8.516,14,8c0-0.984-0.813-2-2-2c-0.531,0-0.994,0.193-1.38,0.58l-7.958,7.958 
                         C2.334,14.866,2,15.271,2,16s0.279,1.08,0.646,1.447l7.974,7.973C11.006,25.807,11.469,26,12,26c1.188,0,2-1.016,2-2 
                         c0-0.516-0.186-0.986-0.58-1.38L8.8,18H28c1.104,0,2-0.896,2-2S29.104,14,28,14z"
-                        fill="#1aabff" />
+                        fill="#e9f7ff" />
                 </svg>
             </button>
 

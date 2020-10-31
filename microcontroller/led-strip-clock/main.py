@@ -6,7 +6,6 @@ from ClockManager import ClockManager
 from settings import readNetId
 
 PUBLIC_NAME = "clock"
-
 netId = readNetId()
 
 wifiManager = WifiManager(PUBLIC_NAME, netId)

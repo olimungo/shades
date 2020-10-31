@@ -15,7 +15,7 @@ class NtpTime:
         self.loop.create_task(self._waitForStation())
 
     async def _waitForStation(self):
-        await sleep(15)
+        await sleep(5)
 
         while not self._wifiManager.isConnectedToStation():
             await sleep(2)

@@ -8,6 +8,7 @@ m0.speed(5000)
 
 """
 import ustruct
+from Blink import Blink
 
 
 _STATE_BRAKE = const(0)
@@ -35,14 +36,23 @@ class Motor:
         if frequency is None:
             return self._pwm_frequency
         self._pwm_frequency = frequency
-        self.i2c.writeto_mem(self.address, 0x00 | self.index,
-            ustruct.pack(">BH", 0x00, frequency))
+
+        try:
+            self.i2c.writeto_mem(self.address, 0x00 | self.index,
+                ustruct.pack(">BH", 0x00, frequency))
+        except Exception as e:
+            Blink().flash3TimesSlow()
+            print("> Motor.frequency exception: {}".format(e))
 
     def update(self):
         if self.standby_pin is not None:
             self.standby_pin.value(not self._state == _STATE_SLEEP)
-        self.i2c.writeto_mem(self.address, 0x10 | self.index,
-            ustruct.pack(">BH", self._state, self._speed))
+
+        try:
+            self.i2c.writeto_mem(self.address, 0x10 | self.index,
+                ustruct.pack(">BH", self._state, self._speed))
+        except Exception as e:
+            print("> Motor.update exception: {}".format(e))
 
     def speed(self, speed=None):
         if speed is None:

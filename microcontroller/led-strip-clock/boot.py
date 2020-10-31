@@ -11,7 +11,7 @@ esp.osdebug(None)
 
 freq(160000000)
 
-# webrepl.start()
+webrepl.start()
 
 
 def rst():
