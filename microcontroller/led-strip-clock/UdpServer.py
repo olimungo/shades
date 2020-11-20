@@ -1,11 +1,11 @@
-from select import select
-from usocket import socket, AF_INET, SOCK_DGRAM
+from uselect import select
+from usocket import socket, getaddrinfo, AF_INET, SOCK_DGRAM
 from uasyncio import get_event_loop, sleep_ms
 from gc import collect
 
-_MAX_PACKET_SIZE = const(768)
-_UDPS_PORT = const(53)
-_IDLE_TIME_BETWEEN_CHECKS = const(500)
+MAX_PACKET_SIZE = const(768)
+UDPS_PORT = const(53)
+IDLE_TIME_BETWEEN_CHECKS = const(50)
 
 class DNSQuery:
     def __init__(self, data):
@@ -38,33 +38,36 @@ class DNSQuery:
         return packet
 
 
-class UdpsServer:
-    loop = get_event_loop()
-    connected = False
+class UdpServer:
+    def __init__(self, ip):
+        self.ip = ip
 
-    def __init__(self, wifiManager):
-        self.wifiManager = wifiManager
+        self.sock = socket(AF_INET, SOCK_DGRAM)
+        self.sock.setblocking(False)
+        addr = getaddrinfo(self.ip, UDPS_PORT)[0][-1]
+        self.sock.bind(addr)
 
-        self.udps = socket(AF_INET, SOCK_DGRAM)
-        self.udps.setblocking(False)
-        self.udps.bind(("", _UDPS_PORT))
+        self.loop = get_event_loop()
+        self.loop.create_task(self.check_requests())
 
-        self.loop.create_task(self._checkUdps())
-
-    async def _checkUdps(self):
+    async def check_requests(self):
         while True:
             try:
-                readers, _, _ = select([self.udps], [], [], None)
+                readers, _, _ = select([self.sock], [], [], None)
 
                 if readers:
                     collect()
 
-                    data, address = self.udps.recvfrom(_MAX_PACKET_SIZE)
-                    self.udps.sendto(DNSQuery(data).response(self.wifiManager.getIp()), address)
+                    data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
+                    request = DNSQuery(data)
+
+                    print("> UDP reply: {:s} -> {:s}".format(request.domain, self.ip))
+
+                    self.sock.sendto(request.response(self.ip), address)
 
                     del data
                     collect()
             except Exception as e:
-                print("> UdpsServer._checkUdps error: {}".format(e))
+                print("> ERROR in UdpServer.check_requests: {}".format(e))
 
-            await sleep_ms(_IDLE_TIME_BETWEEN_CHECKS)
+            await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)

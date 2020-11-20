@@ -1,4 +1,4 @@
-FROM micropython-base
+FROM micropython-base-12
 
 COPY modules/ /micropython/ports/esp8266/modules/
 

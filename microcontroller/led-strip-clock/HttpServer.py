@@ -1,22 +1,29 @@
-from usocket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from usocket import socket, getaddrinfo, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from uselect import poll, POLLIN
 from ure import compile
 from gc import collect, mem_free
+
+from UdpServer import UdpServer
 
 MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
 
 
-class WebServer:
-    def __init__(self, wifiManager):
-        self.wifiManager = wifiManager
-        self.webServer = socket(AF_INET, SOCK_STREAM)
-        self.webServer.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.webServer.bind(("", HTTP_PORT))
-        self.webServer.listen(1)
+class HttpServer:
+    def __init__(self, ip, routes):
+        self.ip = ip
+        self.routes = routes
 
+        self.udp = UdpServer(self.ip)
+
+        self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        addr = getaddrinfo("0.0.0.0", HTTP_PORT)[0][-1]
+        self.sock.bind(addr)
+        self.sock.listen(1)
+        
         self.poller = poll()
-        self.poller.register(self.webServer, POLLIN)
+        self.poller.register(self.sock, POLLIN)
 
     def _splitRequest(self, request):
         path = ""
@@ -64,32 +71,26 @@ class WebServer:
     def index(self, client, interpolate):
         print("> Send index page")
 
-        file = open("index.html", "r")
+        file = open("index.html", "rb")
 
         while True:
             data = file.readline()
 
-            if data == "":
+            if data == b"":
                 break
 
-            if data != "\n":
-                if data.find("%%") != -1:
-                    for key in interpolate:
-                        data = data.replace("%%{}%%".format(key), interpolate[key])
-
+            if data != b"\n":
                 client.write(data)
 
         file.close()
 
-        # If in Captive Portal mode (ESP as an Access Point), do not close the client
-        if self.wifiManager.isConnectedToStation():
-            client.close()
+        client.close()
 
     def poll(self):
         request = self.poller.poll(1)
 
         if request:
-            client, addr = self.webServer.accept()
+            client, addr = self.sock.accept()
 
             collect()
 

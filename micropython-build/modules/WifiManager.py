@@ -1,6 +1,5 @@
 from network import WLAN, STA_IF, AP_IF, AUTH_OPEN
 from uasyncio import get_event_loop, sleep
-from UdpsServer import UdpsServer
 from Blink import Blink
 
 _WAIT_FOR_FLASHING_LED = const(2)
@@ -22,7 +21,6 @@ class WifiManager:
         self.setNetId(netId)
         self.station.active(True)
         self.ap.active(False)
-        self.udpsServer = UdpsServer(self)
 
         self.loop.create_task(self._checkConnection())
 

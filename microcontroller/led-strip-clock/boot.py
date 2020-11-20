@@ -1,6 +1,6 @@
 from machine import reset, freq
 import esp
-import webrepl
+# import webrepl
 
 print("")
 print("> Booting...")
@@ -11,7 +11,7 @@ esp.osdebug(None)
 
 freq(160000000)
 
-webrepl.start()
+# webrepl.start()
 
 
 def rst():

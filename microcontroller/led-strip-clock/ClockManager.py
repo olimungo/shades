@@ -88,7 +88,7 @@ class ClockManager:
             except Exception as e:
                 print("> ClockManager._pollWebServer exception: {}".format(e))
 
-            await sleep_ms(250)
+            await sleep_ms(50)
 
     def _index(self, client):
         ip = self.wifiManager.getIp()
