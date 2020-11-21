@@ -18,7 +18,7 @@ class HttpServer:
 
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        addr = getaddrinfo("0.0.0.0", HTTP_PORT)[0][-1]
+        addr = getaddrinfo(self.ip, HTTP_PORT)[0][-1]
         self.sock.bind(addr)
         self.sock.listen(1)
         
