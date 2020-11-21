@@ -23,7 +23,7 @@ class ClockManager:
         self.webServer = webServer
         self.time = NtpTime(self.wifiManager)
         self.clock = Clock(self.time, color)
-        self.clock.playEffectInit(120)
+        # self.clock.playEffectInit(120)
 
         self.loop = get_event_loop()
         self.loop.create_task(self._pollWebServer())
@@ -50,7 +50,7 @@ class ClockManager:
     async def _pollWebServer(self):
         while True:
             try:
-                (emptyRequest, client, path, queryStringsArray) = self.webServer.poll()
+                (emptyRequest, client, path, queryStringsArray) = self.webServer.handle()
 
                 if not emptyRequest:
                     if path == "/" or path == "/index.html":

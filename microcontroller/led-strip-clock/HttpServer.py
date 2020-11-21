@@ -1,13 +1,15 @@
 from usocket import socket, getaddrinfo, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from uselect import poll, POLLIN
 from ure import compile
-from gc import collect, mem_free
-
+from gc import collect
 from UdpServer import UdpServer
 
 MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
 
+HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
+REDIRECT = b"HTTP/1.1 302 Redirect\r\nLocation: index.html\r\n\r\n"
+CONTENT_TYPE = b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
 
 class HttpServer:
     def __init__(self, ip, routes):
@@ -25,14 +27,15 @@ class HttpServer:
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)
 
-    def _splitRequest(self, request):
+    def split_request(self, request):
         path = ""
         queryStrings = {}
-        queryStringsArray = {}
+        params = {}
 
         try:
             regex = compile("[\r\n]")
-            firstLine = str(regex.split(request)[0])
+            request_per_line = regex.split(request)
+            firstLine = str(request_per_line[0])
             _, url, _ = firstLine.split(" ")
 
             path = url
@@ -43,35 +46,22 @@ class HttpServer:
 
             for item in queryStrings:
                 k, v = item.split("=")
-                queryStringsArray[k] = v
+                params[k] = v
         except:
             print("> Bad request: " + request)
 
-        return path, queryStringsArray
+        return path, params
 
-    def ok(self, client):
-        print("> Send empty OK response")
+    def redirect(self, client):
+        print("> Send redirect")
 
-        client.send("HTTP/1.1 200 OK\r\n\r\n")
+        client.send(REDIRECT)
         client.close()
 
-    def notFound(self, client):
-        print("> Send Page not found")
+    def send_page(self, client, page):
+        print("> Send page {}".format(page))
 
-        client.send(
-            "HTTP/1.1 404 Not Found\r\n\r\nQUOD GRATIS ASSERITUR, GRATIS NEGATUR\r\n\r\n"
-        )
-        client.close()
-
-    def redirectToIndex(self, client):
-        print("> Send 302 Redirect")
-        client.send("HTTP/1.1 302 Redirect\r\nLocation: index.html\r\n\r\n")
-        client.close()
-
-    def index(self, client, interpolate):
-        print("> Send index page")
-
-        file = open("index.html", "rb")
+        file = open(page, "rb")
 
         while True:
             data = file.readline()
@@ -83,29 +73,42 @@ class HttpServer:
                 client.write(data)
 
         file.close()
-
         client.close()
 
-    def poll(self):
-        request = self.poller.poll(1)
+    def call_route(self, client, route, params):
+        # Call a function, which may or may not return a response
+        response = route(params)
+        
+        body = response[0] or b""
+        response = (response[1] or HEADER_OK) + CONTENT_TYPE % (len(body), body)
 
-        if request:
-            client, addr = self.sock.accept()
+        client.send(response)
+        client.close()
 
+    def handle(self):
+        try:
             collect()
+            
+            request = self.poller.poll(1)
 
-            try:
+            if request:
+                client, addr = self.sock.accept()
+
                 request = client.recv(MAX_PACKET_SIZE)
 
-                path, queryStringsArray = self._splitRequest(request)
+                if request:
+                    path, params = self.split_request(request)
 
-                del request
-                collect()
-            except Exception as e:
-                print("> WebServer.poll exception: {}".format(e))
-                print("> Mem free at the moment of the error: {}".format(mem_free()))
-                return True, False, False, False
+                    print("request: {}".format(request))
 
-            return False, client, path, queryStringsArray
-        else:
-            return True, False, False, False
+                    route = self.routes.get(path.encode('ascii'), None)
+
+                    if type(route) is bytes:
+                        # Expect a filename, so return contents of file
+                        self.send_page(client, route)
+                    elif callable(route):
+                        self.call_route(client, route, params)
+                    else:
+                        self.redirect(client)
+        except Exception as e:
+            print("> HttpServer.handle exception: {}".format(e))
