@@ -1,85 +1,50 @@
-from ujson import loads, dumps
+from uos import remove
 
-settings = {"netId": "0", "essid": "", "group": "", "color": "0000ff"}
+FILE = "./settings.csv"
 
+class Settings:
+    def __init__(self, net_id=b"0", group=b"", color=b"0000ff"):
+        self.net_id = net_id
+        self.group = group
+        self.color = color
 
-def createSettings():
-    global settings
+    def write(self):
+        if self.is_valid():
+            with open(FILE, "wb") as f:
+                f.write(b",".join([self.net_id, self.group, self.color]))
 
-    file = open("settings.json", "w")
-    file.write(dumps(settings))
-    file.close
+    def load(self):
+        try:
+            with open(FILE, "rb") as f:
+                contents = f.read().split(b",")
 
+            if len(contents) == 3:
+                self.net_id, self.group, self.color = contents
 
-def readSettings():
-    global settings
+            if not self.is_valid():
+                remove()
+        except OSError as e:
+            # File not found
+            if e.args[0] == 2:
+                self.write()
 
-    try:
-        file = open("settings.json", "r")
-        jsonSettings = file.read()
-        file.close
+        return self
 
-        settings = loads(jsonSettings)
-    except:
-        createSettings()
+    def remove(self):
+        try:
+            remove(FILE)
+        except OSError:
+            pass
 
-    return settings
+        self.net_id = self.group = self.color = None
 
+    def is_valid(self):
+        # Ensure the credentials are entered as bytes
+        if not isinstance(self.net_id, bytes):
+            return False
+        if not isinstance(self.group, bytes):
+            return False
+        if not isinstance(self.color, bytes):
+            return False
 
-def writeSettings():
-    file = open("settings.json", "w")
-
-    file.write(dumps(settings))
-    file.close()
-
-
-def readEssid():
-    readSettings()
-    return settings["essid"]
-
-
-def writeEssid(essid):
-    global settings
-
-    readSettings()
-    settings["essid"] = essid
-    writeSettings()
-
-
-def readNetId():
-    readSettings()
-    return settings["netId"]
-
-
-def writeNetId(netId):
-    global settings
-
-    readSettings()
-    settings["netId"] = netId
-    writeSettings()
-
-
-def readGroup():
-    readSettings()
-    return settings["group"]
-
-
-def writeGroup(group):
-    global settings
-
-    readSettings()
-    settings["group"] = group
-    writeSettings()
-
-
-def readColor():
-    readSettings()
-    return settings["color"]
-
-
-def writeColor(color):
-    global settings
-
-    readSettings()
-    settings["color"] = color
-    writeSettings()
+        return True

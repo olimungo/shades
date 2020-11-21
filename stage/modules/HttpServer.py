@@ -2,47 +2,41 @@ from usocket import socket, getaddrinfo, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_RE
 from uselect import poll, POLLIN
 from ure import compile
 from gc import collect
-
 from UdpServer import UdpServer
 
 MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
 
 HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
-REDIRECT = b"HTTP/1.1 302 Redirect\r\nLocation: http://192.168.4.1/index.html\r\n\r\n"
+REDIRECT = b"HTTP/1.1 302 Redirect\r\nLocation: index.html\r\n\r\n"
 CONTENT_TYPE = b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
 
 class HttpServer:
-    def __init__(self, routes):
+    def __init__(self, ip, routes):
+        self.ip = ip
         self.routes = routes
 
-        self.udp = UdpServer()
+        self.udp = UdpServer(self.ip)
 
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.sock.bind(("", HTTP_PORT))
-        # addr = getaddrinfo("0.0.0.0", HTTP_PORT)[0][-1]
-        # self.sock.bind(addr)
+        addr = getaddrinfo(self.ip, HTTP_PORT)[0][-1]
+        self.sock.bind(addr)
         self.sock.listen(1)
         
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)
 
     def split_request(self, request):
-        method = ""
         path = ""
         queryStrings = {}
         params = {}
-
-        if isinstance(request, bytes):
-            request = request.decode('ascii')
 
         try:
             regex = compile("[\r\n]")
             request_per_line = regex.split(request)
             firstLine = str(request_per_line[0])
-            method, url, _ = firstLine.split(" ")
-
+            _, url, _ = firstLine.split(" ")
 
             path = url
 
@@ -56,7 +50,7 @@ class HttpServer:
         except:
             print("> Bad request: " + request)
 
-        return method, path, params
+        return path, params
 
     def redirect(self, client):
         print("> Send redirect")
@@ -65,7 +59,7 @@ class HttpServer:
         client.close()
 
     def send_page(self, client, page):
-        print("> Send page {}".format(page.decode('ascii')))
+        print("> Send page {}".format(page))
 
         file = open(page, "rb")
 
@@ -98,14 +92,14 @@ class HttpServer:
             request = self.poller.poll(1)
 
             if request:
-                client, _ = self.sock.accept()
+                client, addr = self.sock.accept()
 
                 request = client.recv(MAX_PACKET_SIZE)
 
                 if request:
-                    method, path, params = self.split_request(request)
+                    path, params = self.split_request(request)
 
-                    print("> HTTP: {} | URL: {} | Params: {}".format(method, path, params))
+                    print("request: {}".format(request))
 
                     route = self.routes.get(path.encode('ascii'), None)
 

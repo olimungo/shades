@@ -1,25 +1,32 @@
 from uasyncio import get_event_loop, sleep_ms
-from WifiManager import WifiManager
-from HttpServer import HttpServer, HEADER_OK
-from ClockManager import ClockManager
 from gc import collect, mem_free
 from machine import reset
-
 from time import sleep
 
-PUBLIC_NAME = "clock"
+from WifiManager import WifiManager
+from HttpServer import HttpServer, HEADER_OK
+from Settings import Settings
+from Credentials import Credentials
 
-class Main():
+PUBLIC_NAME = b"Clock-%s"
+
+class Main:
     def __init__(self):
+        self.settings = Settings()
+        self.credentials = Credentials()
+
+        self.wifi = WifiManager(PUBLIC_NAME % self.settings.net_id)
+
         routes = {
             b"/": b"./index.html",
             b"/index.html": b"./index.html",
             b"/.favico": self.favico,
-            b"/toto": self.toto
+            b"/settings/values": self.settings_values,
+            b"/action/brightness/more": self.brightness_more
         }
 
-        self.wifi = WifiManager(PUBLIC_NAME, "0")
-        self.http = HttpServer("192.168.4.1", routes)
+        self.http = HttpServer(routes)
+        print("HTTP server up and running")
         
         # ClockManager(self.wifi, self.http)
 
@@ -31,16 +38,30 @@ class Main():
     async def handle(self):
         while True:
             self.http.handle()
-            await sleep_ms(50)
+            await sleep_ms(500)
 
-    def toto(self,params):
-        print("toto: {}".format(params))
+    def settings_values(self, params):
+        essid = self.credentials.essid
 
-        return b'{"toto": 3, "titi": "tata"}', HEADER_OK
+        if not essid:
+            essid = ""
+
+        result = b'{"ip": "' + self.wifi.ip + '", "netId": "' + self.settings.net_id + '", "group": "' + \
+            self.settings.group + '", "essid": "' + essid + '"}'
+
+        return result, b"HTTP/1.1 200 OK\r\n"
+
+    def brightness_more(self, params):
+        print("brightness more")
+        # self.display_clock()
+        # self.clock.set_brighter()
+        # self.settings.color = b"" + self.clock.hex
+        # self.settings.write()
+
+        return b"", HEADER_OK
 
     def favico(self, params):
-        print("favico")
-
+        print("> NOT sending the favico :-)")
         return b"", HEADER_OK
 
 try:

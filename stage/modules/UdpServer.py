@@ -1,13 +1,11 @@
 from uselect import poll, POLLIN
-from usocket import socket, getaddrinfo, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
+from usocket import socket, getaddrinfo, AF_INET, SOCK_DGRAM
 from uasyncio import get_event_loop, sleep_ms
 from gc import collect
 
-from WifiManager import AP_IP
-
 MAX_PACKET_SIZE = const(768)
 UDPS_PORT = const(53)
-IDLE_TIME_BETWEEN_CHECKS = const(500)
+IDLE_TIME_BETWEEN_CHECKS = const(50)
 
 class DNSQuery:
     def __init__(self, data):
@@ -39,13 +37,14 @@ class DNSQuery:
 
         return packet
 
-class UdpServer:
-    def __init__(self):
+class UdpServer():
+    def __init__(self, ip):
+        self.ip = ip
+
         self.sock = socket(AF_INET, SOCK_DGRAM)
         self.sock.setblocking(False)
-        # addr = getaddrinfo(AP_IP, UDPS_PORT)[0][-1]
-        # self.sock.bind(addr)
-        self.sock.bind(("", UDPS_PORT))
+        addr = getaddrinfo(self.ip, UDPS_PORT)[0][-1]
+        self.sock.bind(addr)
 
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)
@@ -56,21 +55,20 @@ class UdpServer:
     async def check_requests(self):
         while True:
             try:
-                request = self.poller.poll(1000)
+                request = self.poller.poll(1)
 
                 if request:
                     data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
 
                     request = DNSQuery(data)
 
-                    print("> DNS reply: {:s} -> {:s}".format(request.domain, AP_IP))
+                    print("> DNS reply: {:s} -> {:s}".format(request.domain, self.ip))
 
-                    self.sock.sendto(request.response(AP_IP), address)
+                    self.sock.sendto(request.response(self.ip), address)
 
                     del data
                     collect()
             except Exception as e:
-                pass
-                # print("> ERROR in UdpServer.check_requests: {}".format(e))
+                print("> ERROR in UdpServer.check_requests: {}".format(e))
 
             await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)
