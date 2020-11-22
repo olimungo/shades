@@ -9,7 +9,8 @@ MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
 
 HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
-REDIRECT = b"HTTP/1.1 302 Redirect\r\nLocation: http://192.168.4.1/index.html\r\n\r\n"
+REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: http://192.168.4.1\r\n\r\n"
+NO_CONTENT = b"HTTP/1.1 204 No Content\r\n\r\n"
 CONTENT_TYPE = b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
 
 class HttpServer:
@@ -59,23 +60,29 @@ class HttpServer:
         return method, path, params
 
     def redirect(self, client):
-        print("> Send redirect")
+        print("> Send 302 Redirect")
 
         client.send(REDIRECT)
+        client.close()
+
+    def no_content(self, client):
+        print("> Send 204 No Content")
+
+        client.send(NO_CONTENT)
         client.close()
 
     def send_page(self, client, page):
         print("> Send page {}".format(page.decode('ascii')))
 
-        file = open(page, "rb")
+        file = open(page, "r")
 
         while True:
             data = file.readline()
 
-            if data == b"":
+            if data == "":
                 break
 
-            if data != b"\n":
+            if data != "\n":
                 client.write(data)
 
         file.close()
@@ -90,7 +97,7 @@ class HttpServer:
 
         client.send(response)
         client.close()
-
+    
     def handle(self):
         try:
             collect()
@@ -110,7 +117,7 @@ class HttpServer:
                     route = self.routes.get(path.encode('ascii'), None)
 
                     if type(route) is bytes:
-                        # Expect a filename, so return contents of file
+                        # Expect a filename, so return content of file
                         self.send_page(client, route)
                     elif callable(route):
                         self.call_route(client, route, params)

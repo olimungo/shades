@@ -1,4 +1,4 @@
-from uselect import poll, POLLIN
+from uselect import poll, POLLIN, POLLHUP
 from usocket import socket, getaddrinfo, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 from uasyncio import get_event_loop, sleep_ms
 from gc import collect
@@ -7,7 +7,7 @@ from WifiManager import AP_IP
 
 MAX_PACKET_SIZE = const(768)
 UDPS_PORT = const(53)
-IDLE_TIME_BETWEEN_CHECKS = const(500)
+IDLE_TIME_BETWEEN_CHECKS = const(50)
 
 class DNSQuery:
     def __init__(self, data):
@@ -43,9 +43,10 @@ class UdpServer:
     def __init__(self):
         self.sock = socket(AF_INET, SOCK_DGRAM)
         self.sock.setblocking(False)
-        # addr = getaddrinfo(AP_IP, UDPS_PORT)[0][-1]
-        # self.sock.bind(addr)
-        self.sock.bind(("", UDPS_PORT))
+        self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        addr = getaddrinfo("0.0.0.0", UDPS_PORT)[0][-1]
+        self.sock.bind(addr)
+        # self.sock.bind(("", UDPS_PORT))
 
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)
@@ -56,9 +57,11 @@ class UdpServer:
     async def check_requests(self):
         while True:
             try:
-                request = self.poller.poll(1000)
+                request = self.poller.poll(1)
 
-                if request:
+                event = request[0][1]
+
+                if event != POLLHUP:
                     data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
 
                     request = DNSQuery(data)
@@ -70,7 +73,7 @@ class UdpServer:
                     del data
                     collect()
             except Exception as e:
-                pass
-                # print("> ERROR in UdpServer.check_requests: {}".format(e))
+                # pass
+                print("> ERROR in UdpServer.check_requests: {}".format(e))
 
             await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)

@@ -20,7 +20,9 @@ class Main:
         routes = {
             b"/": b"./index.html",
             b"/index.html": b"./index.html",
-            b"/.favico": self.favico,
+            b"/favicon.ico": self.favicon,
+            b"/scripts.js": b"./scripts.js",
+            b"/style.css": b"./style.css",
             b"/settings/values": self.settings_values,
             b"/action/brightness/more": self.brightness_more
         }
@@ -38,7 +40,7 @@ class Main:
     async def handle(self):
         while True:
             self.http.handle()
-            await sleep_ms(500)
+            await sleep_ms(30)
 
     def settings_values(self, params):
         essid = self.credentials.essid
@@ -60,7 +62,7 @@ class Main:
 
         return b"", HEADER_OK
 
-    def favico(self, params):
+    def favicon(self, params):
         print("> NOT sending the favico :-)")
         return b"", HEADER_OK
 
