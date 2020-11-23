@@ -56,24 +56,28 @@ class UdpServer:
 
     async def check_requests(self):
         while True:
-            try:
-                request = self.poller.poll(1)
+            # try:
+            #     request = self.poller.poll(1)
 
-                # event = request[0][1]
 
-                # if event != POLLHUP:
-                data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
+            #     if request:
+            #         obj, event = request
 
-                request = DNSQuery(data)
+            #         print("obj: {} | event: {}".format(obj, event))
 
-                print("> DNS reply: {:s} -> {:s}".format(request.domain, AP_IP))
+            #         # if event != POLLHUP:
+            #         data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
 
-                self.sock.sendto(request.response(AP_IP), address)
+            #         request = DNSQuery(data)
 
-                del data
-                collect()
-            except Exception as e:
-                pass
-                # print("> ERROR in UdpServer.check_requests: {}".format(e))
+            #         print("> DNS reply: {:s} -> {:s}".format(request.domain, AP_IP))
+
+            #         self.sock.sendto(request.response(AP_IP), address)
+
+            #         del data
+            #         collect()
+            # except Exception as e:
+            #     pass
+            #     # print("> ERROR in UdpServer.check_requests: {}".format(e))
 
             await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)

@@ -5,7 +5,7 @@ from time import sleep
 from network import WLAN, STA_IF
 
 from WifiManager import WifiManager
-from HttpServer import HttpServer, HEADER_OK
+from HttpServer import HttpServer
 from Clock import Clock
 from Settings import Settings
 from Credentials import Credentials
@@ -57,7 +57,6 @@ class Main:
         self.clock = Clock(self.settings.color)
 
         self.loop = get_event_loop()
-        self.loop.create_task(self.handle())
         self.loop.create_task(self.check_wifi())
         self.loop.run_forever()
         self.loop.close()
@@ -76,41 +75,30 @@ class Main:
             while self.sta_if.isconnected():
                 await sleep_ms(1000)
 
-    async def handle(self):
-        while True:
-            self.http.handle()
-            await sleep_ms(50)
-
     def settings_values(self, params):
         essid = self.credentials.essid
 
         if not essid:
-            essid = ""
+            essid = b""
 
         result = b'{"ip": "%s", "netId": "%s", "group": "%s", "essid": "%s"}' % (self.wifi.ip, self.settings.net_id, self.settings.group, essid)
 
-        return result, b"HTTP/1.1 200 OK\r\n"
+        return result
 
     def favicon(self, params):
         print("> NOT sending the favico :-)")
-        return b"", HEADER_OK
 
     def connect(self, params):
-        print("connect")
-        self.credentials.essid = b"%s" % params.get("essid", None)
-        self.credentials.password = b"%s" % params.get("password", None)
+        self.credentials.essid = params.get(b"essid", None)
+        self.credentials.password = params.get(b"password", None)
         self.credentials.write()
 
         self.loop.create_task(self.wifi.connect())
-
-        return b"", HEADER_OK
 
     def display_clock(self, params=None):
         if self.mode == Mode.SCOREBOARD:
             self.mode = Mode.CLOCK
             self.clock.display()
-
-        return b"", HEADER_OK
 
     def display_scoreboard(self, params=None):
         if self.mode == Mode.CLOCK:
@@ -118,21 +106,17 @@ class Main:
             self.mode = Mode.SCOREBOARD
             self.clock.display_scoreboard()
 
-        return b"", HEADER_OK
-
     def set_color(self, params):
         self.display_clock()
 
-        color = params.get("hex", None)
+        color = params.get(b"hex", None)
 
         if color:
             self.clock.set_color(color)
 
             # Comment the following lines in order to NOT save the selected color for the next boot
-            self.settings.color = b"%s" % color
+            self.settings.color = color
             self.settings.write()
-
-        return b"", HEADER_OK
 
     def scoreboard_green_more(self, params):
         return self.scoreboard_update(Player.GREEN, 1)
@@ -160,39 +144,29 @@ class Main:
         self.settings.color = b"%s" % self.clock.hex
         self.settings.write()
 
-        return b"", HEADER_OK
-
     def brightness_less(self, params):
         self.display_clock()
         self.clock.set_darker()
         self.settings.color = b"%s" % self.clock.hex
         self.settings.write()
 
-        return b"", HEADER_OK
-
     def scoreboard_reset(self, params):
         self.display_scoreboard()
         self.clock.reset_scoreboard()
 
-        return b"", HEADER_OK
-
     def settings_net(self, params):
-        id = params.get("id", None)
+        id = params.get(b"id", None)
 
         if id:
-            self.settings.net_id = b"%s" % id
+            self.settings.net_id = id
             self.settings.write()
-
-        return b"", HEADER_OK
 
     def settings_group(self, params):
-        name = params.get("name", None)
+        name = params.get(b"name", None)
 
         if name:
-            self.settings.group = b"%s" % name
+            self.settings.group = name
             self.settings.write()
-
-        return b"", HEADER_OK
 
 try:
     collect()

@@ -1,23 +1,21 @@
+from uasyncio import get_event_loop, sleep_ms
 from usocket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from uselect import poll, POLLIN
 from ure import compile
 from gc import collect
 
-from UdpServer import UdpServer
-
 MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
+IDLE_TIME_BETWEEN_CHECKS = const(30)
 
 HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
-REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: index.html\r\n\r\n"
-NO_CONTENT = b"HTTP/1.1 204 No Content\r\n\r\n"
-CONTENT_TYPE = b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
+HEADER_REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: index.html\r\n\r\n"
+HEADER_NO_CONTENT = b"HTTP/1.1 204 No Content\r\n\r\n"
+HEADER_CONTENT = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
 
 class HttpServer:
     def __init__(self, routes):
         self.routes = routes
-
-        self.udp = UdpServer()
 
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -26,6 +24,9 @@ class HttpServer:
         
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)
+
+        self.loop = get_event_loop()
+        self.loop.create_task(self.handle())
 
     def split_request(self, request):
         method = ""
@@ -51,7 +52,8 @@ class HttpServer:
 
             for item in queryStrings:
                 k, v = item.split("=")
-                params[k] = v
+                params[b"%s" % k] = b"%s" % v
+
         except:
             print("> Bad request: " + request)
 
@@ -60,13 +62,13 @@ class HttpServer:
     def redirect(self, client):
         print("> Send 302 Redirect")
 
-        client.send(REDIRECT)
+        client.send(HEADER_REDIRECT)
         client.close()
 
     def no_content(self, client):
         print("> Send 204 No Content")
 
-        client.send(NO_CONTENT)
+        client.send(HEADER_NO_CONTENT)
         client.close()
 
     def send_page(self, client, page):
@@ -89,36 +91,50 @@ class HttpServer:
     def call_route(self, client, route, params):
         # Call a function, which may or may not return a response
         response = route(params)
-        
-        body = response[0] or b""
-        response = (response[1] or HEADER_OK) + CONTENT_TYPE % (len(body), body)
+
+        if isinstance(response, tuple):
+            body = response[0] or b""
+            header = response[1]
+        else:
+            body = response or b""
+            header = None
+
+        if body:
+            response = header or HEADER_CONTENT % (len(body), body)
+        elif header:
+            response = header
+        else:
+            response = HEADER_OK
 
         client.send(response)
         client.close()
     
-    def handle(self):
-        try:
-            collect()
+    async def handle(self):
+        while True:
+            try:
+                collect()
 
-            polled_request = self.poller.poll(1)
+                polled_request = self.poller.poll(1)
 
-            if polled_request:
-                client, _ = self.sock.accept()
-                request = client.recv(MAX_PACKET_SIZE)
+                if polled_request:
+                    client, _ = self.sock.accept()
+                    request = client.recv(MAX_PACKET_SIZE)
 
-                if request:
-                    method, path, params = self.split_request(request)
+                    if request:
+                        method, path, params = self.split_request(request)
 
-                    print("REQ Method: {} | path: {}: params: {}".format(method, path, params))
+                        print("REQUEST => Method: {} | path: {}: params: {}".format(method, path, params))
 
-                    route = self.routes.get(path.encode('ascii'), None)
+                        route = self.routes.get(path.encode('ascii'), None)
 
-                    if type(route) is bytes:
-                        # Expect a filename, so return content of file
-                        self.send_page(client, route)
-                    elif callable(route):
-                        self.call_route(client, route, params)
-                    else:
-                        self.no_content(client)
-        except Exception as e:
-            print("> HttpServer.handle exception: {}".format(e))
+                        if type(route) is bytes:
+                            # Expect a filename, so return content of file
+                            self.send_page(client, route)
+                        elif callable(route):
+                            self.call_route(client, route, params)
+                        else:
+                            self.no_content(client)
+            except Exception as e:
+                print("> HttpServer.handle exception: {}".format(e))
+
+            await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)
