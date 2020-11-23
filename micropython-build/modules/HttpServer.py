@@ -1,4 +1,4 @@
-from usocket import socket, getaddrinfo, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from usocket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from uselect import poll, POLLIN
 from ure import compile
 from gc import collect
@@ -9,7 +9,7 @@ MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
 
 HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
-REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: http://192.168.4.1\r\n\r\n"
+REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: index.html\r\n\r\n"
 NO_CONTENT = b"HTTP/1.1 204 No Content\r\n\r\n"
 CONTENT_TYPE = b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
 
@@ -22,8 +22,6 @@ class HttpServer:
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.sock.bind(("", HTTP_PORT))
-        # addr = getaddrinfo("0.0.0.0", HTTP_PORT)[0][-1]
-        # self.sock.bind(addr)
         self.sock.listen(1)
         
         self.poller = poll()
@@ -74,15 +72,15 @@ class HttpServer:
     def send_page(self, client, page):
         print("> Send page {}".format(page.decode('ascii')))
 
-        file = open(page, "r")
+        file = open(page, "rb")
 
         while True:
             data = file.readline()
 
-            if data == "":
+            if data == b"":
                 break
 
-            if data != "\n":
+            if data != b"\n":
                 client.write(data)
 
         file.close()
@@ -101,18 +99,17 @@ class HttpServer:
     def handle(self):
         try:
             collect()
-            
-            request = self.poller.poll(1)
 
-            if request:
+            polled_request = self.poller.poll(1)
+
+            if polled_request:
                 client, _ = self.sock.accept()
-
                 request = client.recv(MAX_PACKET_SIZE)
 
                 if request:
                     method, path, params = self.split_request(request)
 
-                    print("> HTTP: {} | URL: {} | Params: {}".format(method, path, params))
+                    print("REQ Method: {} | path: {}: params: {}".format(method, path, params))
 
                     route = self.routes.get(path.encode('ascii'), None)
 
@@ -122,6 +119,6 @@ class HttpServer:
                     elif callable(route):
                         self.call_route(client, route, params)
                     else:
-                        self.redirect(client)
+                        self.no_content(client)
         except Exception as e:
             print("> HttpServer.handle exception: {}".format(e))

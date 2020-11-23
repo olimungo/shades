@@ -1,15 +1,16 @@
 from uasyncio import get_event_loop, sleep_ms
-from gc import collect, mem_free
-from machine import reset
-from time import sleep
+from uselect import poll
+from gc import mem_free, collect, threshold, mem_alloc
+import network
 
-from WifiManager import WifiManager
-from HttpServer import HttpServer, HEADER_OK
-from Clock import Clock
-from Settings import Settings
-from Credentials import Credentials
+from clock import Clock
 
-PUBLIC_NAME = b"Clock-%s"
+from httpServer import HTTPServer
+from captivePortal import CaptivePortal
+from credentials import Creds
+from settings import Settings
+
+PUBLIC_NAME = b"clock"
 ORANGE = (255, 98, 0)
 SPINNER_RATE = const(120)
 
@@ -21,19 +22,17 @@ class Mode:
     CLOCK = 0
     SCOREBOARD = 1
 
-class Main:
+class ClockManager:
     def __init__(self):
-        self.settings = Settings().load()
-        self.credentials = Credentials().load()
-
+        self.brightness = 0
         self.mode = Mode.CLOCK
+        self.sta_if = network.WLAN(network.STA_IF)
 
-        self.wifi = WifiManager(PUBLIC_NAME % self.settings.net_id)
+        self.credentials = Creds().load()
+        self.settings = Settings().load()
 
         routes = {
             b"/": b"./index.html",
-            b"/index.html": b"./index.html",
-            b"/favicon.ico": self.favicon,
             b"/connect": self.connect,
             b"/action/color": self.set_color,
             b"/action/clock/display": self.display_clock,
@@ -50,24 +49,39 @@ class Main:
             b"/settings/group": self.settings_group
         }
 
-        self.http = HttpServer(routes)
-        print("> HTTP server up and running")
-
-        print("Color in settings: {}".format(self.settings.color))
+        self.poller = poll()
+        self.http = HTTPServer(self.poller, CaptivePortal.AP_IP, routes)
+        print("> HTTP server started")
 
         self.clock = Clock(self.settings.color)
 
         self.loop = get_event_loop()
-        self.loop.create_task(self.handle())
-        self.loop.run_forever()
-        self.loop.close()
+        self.loop.create_task(self.check_wifi())
+        self.loop.create_task(self.poll_web_server())
 
     async def check_wifi(self):
         while True:
+            collect()
+            threshold(mem_free() // 4 + mem_alloc())
+            print("> Free memory: {}".format(mem_free()))
+
             # self.clock.play_spinner(SPINNER_RATE, ORANGE)
+
+            self.portal = CaptivePortal(PUBLIC_NAME + b"-%s" % self.settings.net_id)
+            self.portal.start()
 
             while not self.sta_if.isconnected():
                 await sleep_ms(1000)
+            
+            ip = self.sta_if.ifconfig()[0]
+            self.http.set_ip(ip)
+
+            print("> Connected to {:s} ({:s})".format(self.credentials.essid, ip))
+
+            self.portal = None
+            
+            collect()
+            print("> Free memory: {}".format(mem_free()))
 
             self.clock.stop_clock()
             self.clock.stop_effect_init = True
@@ -76,10 +90,13 @@ class Main:
             while  self.sta_if.isconnected():
                 await sleep_ms(1000)
 
-    async def handle(self):
+    async def poll_web_server(self):
         while True:
-            self.http.handle()
-            await sleep_ms(30)
+            for response in self.poller.ipoll(1000):
+                sock, event, *others = response
+                self.http.handle(sock, event, others)
+
+            await sleep_ms(50)
 
     def settings_values(self, params):
         essid = self.credentials.essid
@@ -87,30 +104,28 @@ class Main:
         if not essid:
             essid = ""
 
-        result = b'{"ip": "%s", "netId": "%s", "group": "%s", "essid": "%s"}' % (self.wifi.ip, self.settings.net_id, self.settings.group, essid)
+        result = b'{"ip": "' + self.http.local_ip + '", "netId": "' + self.settings.net_id + '", "group": "' + \
+            self.settings.group + '", "essid": "' + essid + '"}'
 
         return result, b"HTTP/1.1 200 OK\r\n"
 
-    def favicon(self, params):
-        print("> NOT sending the favico :-)")
-        return b"", HEADER_OK
-
     def connect(self, params):
-        print("connect")
-        self.credentials.essid = b"%s" % params.get("essid", None)
-        self.credentials.password = b"%s" % params.get("password", None)
-        self.credentials.write()
+        if self.portal:
+            # Write out credentials
+            self.credentials.essid = params.get(b"essid", None)
+            self.credentials.password = params.get(b"password", None)
+            self.credentials.write()
 
-        self.loop.create_task(self.wifi.connect())
+            self.loop.create_task(self.portal.connect_to_wifi())
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def display_clock(self, params=None):
         if self.mode == Mode.SCOREBOARD:
             self.mode = Mode.CLOCK
             self.clock.display()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def display_scoreboard(self, params=None):
         if self.mode == Mode.CLOCK:
@@ -118,21 +133,21 @@ class Main:
             self.mode = Mode.SCOREBOARD
             self.clock.display_scoreboard()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def set_color(self, params):
         self.display_clock()
 
-        color = params.get("hex", None)
+        color = params.get(b"hex", None)
 
         if color:
             self.clock.set_color(color)
 
             # Comment the following lines in order to NOT save the selected color for the next boot
-            self.settings.color = b"%s" % color
+            self.settings.color = color
             self.settings.write()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def scoreboard_green_more(self, params):
         return self.scoreboard_update(Player.GREEN, 1)
@@ -160,7 +175,7 @@ class Main:
         self.settings.color = b"" + self.clock.hex
         self.settings.write()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def brightness_less(self, params):
         self.display_clock()
@@ -168,39 +183,29 @@ class Main:
         self.settings.color = b"" + self.clock.hex
         self.settings.write()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def scoreboard_reset(self, params):
         self.display_scoreboard()
         self.clock.reset_scoreboard()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def settings_net(self, params):
-        id = params.get("id", None)
+        id = params.get(b"id", None)
 
         if id:
-            self.settings.net_id = b"%s" % id
+            self.settings.net_id = id
             self.settings.write()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
     def settings_group(self, params):
-        name = params.get("name", None)
+        name = params.get(b"name", None)
 
         if name:
-            self.settings.group = b"%s" % name
+            self.settings.group = name
             self.settings.write()
 
-        return b"", HEADER_OK
+        return b"", b"HTTP/1.1 200 OK\r\n"
 
-try:
-    collect()
-    print("Free mem: {}".format(mem_free()))
-
-    main = Main()
-except Exception as e:
-    print("> Software failure.\nGuru medidation #00000000003.00C06560")
-    print("> {}".format(e))
-    sleep(10)
-    reset()

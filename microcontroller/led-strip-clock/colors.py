@@ -1,151 +1,114 @@
-from math import floor
+from math import fabs
 
-def rgbToHsv(r, g, b):
-    r = float(r)
-    g = float(g)
-    b = float(b)
-    high = max(r, g, b)
-    low = min(r, g, b)
-    h, s, v = high, high, high
+def rgb_to_hsl(rgb):
+    # Make r, g, and b fractions of 1
+    r = rgb[0] / 255
+    g = rgb[1] / 255
+    b = rgb[2] / 255
 
-    d = high - low
-    s = 0 if high == 0 else d/high
+    # Find greatest and smallest channel values
+    cmin = min(r, g, b)
+    cmax = max(r, g, b)
+    delta = cmax - cmin
+    h = 0
+    s = 0
+    l = 0
 
-    if high == low:
-        h = 0.0
+    # Calculate hue
+    # No difference
+    if delta == 0:
+        h = 0
+    # Red is max
+    elif cmax == r:
+        h = ((g - b) / delta) % 6
+    # Green is max
+    elif cmax == g:
+        h = (b - r) / delta + 2
+    # Blue is max
     else:
-        h = {
-            r: (g - b) / d + (6 if g < b else 0),
-            g: (b - r) / d + 2,
-            b: (r - g) / d + 4,
-        }[high]
-        h /= 6
+        h = (r - g) / delta + 4
 
-    return h, s, v
+    h = round(h * 60)
 
-def hsvToRgb(h, s, v):
-    i = floor(h*6)
-    f = h*6 - i
-    p = v * (1-s)
-    q = v * (1-f*s)
-    t = v * (1-(1-f)*s)
+    # Make negative hues positive behind 360°
+    if h < 0:
+        h += 360
 
-    r, g, b = [
-        (v, t, p),
-        (q, v, p),
-        (p, v, t),
-        (p, q, v),
-        (t, p, v),
-        (v, p, q),
-    ][int(i%6)]
+    # Calculate lightness
+    l = (cmax + cmin) / 2
 
-    return int(r), int(g), int(b)
+    # Calculate saturation
+    if delta == 0:
+        s= 0
+    else :
+        s = delta / (1 - fabs(2 * l - 1))
 
-def hexToRgb(h):
-    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+    # Multiply l and s by 100
+    s = round(+(s * 100), 2)
+    l = round(+(l * 100), 2)
 
-def brighter(rgb, hsv):
-    r, g, b = rgb
-    hOrig, sOrig, vOrig = hsv
-    h, s, v = rgbToHsv(r, g, b)
+    return (h, s , l)
 
-    if v < vOrig:
-        if h != hOrig:
-            s = sOrig
-            h = hOrig
+def hsl_to_rgb(hsl):
+    # Must be fractions of 1
+    h = hsl[0]
+    s = hsl[1] / 100
+    l = hsl[2] / 100
 
-        if v > 120:
-            step = 50
-        elif v > 70:
-            step = 30
-        elif v > 25:
-            step = 10
-        else:
-            step = 5
+    c = (1 - fabs(2 * l - 1)) * s
+    x = c * (1 - fabs((h / 60) % 2 - 1))
+    m = l - c / 2
+    r = 0
+    g = 0
+    b = 0
 
-        if v + step < vOrig:
-            v += step
-        else:
-            v = vOrig
-    else:
-        if s - 0.2 > 0:
-            s -= 0.2
-        else:
-            s = 0
-            v = 255
+    if 0 <= h and h < 60:
+        r = c
+        g = x
+        b = 0
+    elif 60 <= h and h < 120:
+        r = x; g = c; b = 0
+    elif 120 <= h and h < 180:
+        r = 0
+        g = c
+        b = x
+    elif 180 <= h and h < 240:
+        r = 0
+        g = x
+        b = c
+    elif 240 <= h and h < 300:
+        r = x
+        g = 0
+        b = c
+    elif 300 <= h and h < 360:
+        r = c
+        g = 0
+        b = x
 
-    return hsvToRgb(h, s, v)
+    r = round((r + m) * 255)
+    g = round((g + m) * 255)
+    b = round((b + m) * 255)
 
-def darker(rgb, hsv):
-    r, g, b = rgb
-    hOrig, sOrig, vOrig = hsv
-    h, s, v = rgbToHsv(r, g, b)
+    return (r, g, b)
 
-    if s < sOrig:
-        if h != hOrig:
-            h = hOrig
+def hex_to_rgb(hex):
+    return tuple(int(hex[i:i+2], 16) for i in (0, 2, 4))
 
-        if s + 0.2 < sOrig:
-            s += 0.2
-        else:
-            s = sOrig
-    else:
-        if v > 120:
-            step = 50
-        elif v > 70:
-            step = 30
-        elif v > 25:
-            step = 10
-        else:
-            step = 5
+def rgb_to_hex(rgb):
+    return '%02x%02x%02x' % rgb
 
-        if v - step > 0:
-            v -= step
-        else:
-            v = 0
+def darker(rgb):
+    h, s, l = rgb_to_hsl(rgb)
+    l = round(l - 5) if l - 5 > 1 else 1
 
-    return hsvToRgb(h, s, v)
+    print("darker: {}".format((h, s, l)))
 
-def rgb_to_hsl(r, g, b):
-    r = float(r)
-    g = float(g)
-    b = float(b)
-    high = max(r, g, b)
-    low = min(r, g, b)
-    h, s, v = ((high + low) / 2,)*3
+    return hsl_to_rgb((h, s, l))
 
-    if high == low:
-        h = 0.0
-        s = 0.0
-    else:
-        d = high - low
-        # l = (high + low) / 2
-        s = d / (2 - high - low) if l > 0.5 else d / (high + low)
-        h = {
-            r: (g - b) / d + (6 if g < b else 0),
-            g: (b - r) / d + 2,
-            b: (r - g) / d + 4,
-        }[high]
-        h /= 6
+def brighter(rgb):
+    h, s, l = rgb_to_hsl(rgb)
+    l = round(l + 5) if l + 5 < 99 else 99
 
-    return h, s, v
+    print("brighter: {}".format((h, s, l)))
 
-def hsl_to_rgb(h, s, l):
-    def hue_to_rgb(p, q, t):
-        t += 1 if t < 0 else 0
-        t -= 1 if t > 1 else 0
-        if t < 1/6: return p + (q - p) * 6 * t
-        if t < 1/2: return q
-        if t < 2/3: p + (q - p) * (2/3 - t) * 6
-        return p
-
-    if s == 0:
-        r, g, b = l, l, l
-    else:
-        q = l * (1 + s) if l < 0.5 else l + s - l * s
-        p = 2 * l - q
-        r = hue_to_rgb(p, q, h + 1/3)
-        g = hue_to_rgb(p, q, h)
-        b = hue_to_rgb(p, q, h - 1/3)
-
-    return r, g, b
+    return hsl_to_rgb((h, s, l))

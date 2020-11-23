@@ -7,7 +7,7 @@ from WifiManager import AP_IP
 
 MAX_PACKET_SIZE = const(768)
 UDPS_PORT = const(53)
-IDLE_TIME_BETWEEN_CHECKS = const(50)
+IDLE_TIME_BETWEEN_CHECKS = const(30)
 
 class DNSQuery:
     def __init__(self, data):
@@ -59,21 +59,21 @@ class UdpServer:
             try:
                 request = self.poller.poll(1)
 
-                event = request[0][1]
+                # event = request[0][1]
 
-                if event != POLLHUP:
-                    data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
+                # if event != POLLHUP:
+                data, address = self.sock.recvfrom(MAX_PACKET_SIZE)
 
-                    request = DNSQuery(data)
+                request = DNSQuery(data)
 
-                    print("> DNS reply: {:s} -> {:s}".format(request.domain, AP_IP))
+                print("> DNS reply: {:s} -> {:s}".format(request.domain, AP_IP))
 
-                    self.sock.sendto(request.response(AP_IP), address)
+                self.sock.sendto(request.response(AP_IP), address)
 
-                    del data
-                    collect()
+                del data
+                collect()
             except Exception as e:
-                # pass
-                print("> ERROR in UdpServer.check_requests: {}".format(e))
+                pass
+                # print("> ERROR in UdpServer.check_requests: {}".format(e))
 
             await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)

@@ -1,71 +1,75 @@
 from machine import Pin, Timer
 from math import floor
-import neopixel
+from neopixel import NeoPixel
 import colors
+import gc
+
+from NtpTime import NtpTime
 
 LEDS = 59
+DIGIT = [1, 15, 31, 45]
+DOTS = 29
+EFFECT_INIT = [(0, 1), (2, 3), (4, 5), (12, 13), (10 ,11), (8 ,9)]
 
 class Gpio:
     DATA = 4 # D2
 
 class Clock:
-    _digits = [1, 15, 31, 45]
-    _dots = 29
-    _hour1 = _hour2 = _minute1 = _minute2 = _second = -1
-    _rgb = None
-    _hsv = None
-    _tickTimer = Timer(-1)
-    _digits = [1, 15, 31, 45]
-    _effectInit = [(0, 1), (2, 3), (4, 5), (12, 13), (10 ,11), (8 ,9)]
-    _effectToPlay = None
-    _effectOriginal = None
-    stopEffectInit = None
-    scoreGreen = 0
-    scoreRed = 0
+    hour1 = hour2 = minute1 = minute2 = second = -1
+    rgb = None
+    hex = None
+    tick_timer = Timer(-1)
+    effect_to_play = None
+    effect_original = None
+    stop_effect_init = None
+    score_green = 0
+    score_red = 0
 
-    def __init__(self, time, color="0000ff"):
-        self._time = time
-        self._ledsStrip = neopixel.NeoPixel(Pin(Gpio.DATA), LEDS)
-        self.clearAll()
-        self.setColor(color)
+    def __init__(self, color="0000ff"):
+        self.leds_strip = NeoPixel(Pin(Gpio.DATA), LEDS)
 
-    def clearAll(self):
-        for i in range(self._ledsStrip.n):
-            self._ledsStrip[i] = (0, 0, 0)
+        self.time = NtpTime()
 
-        self._ledsStrip.write()
+        self.clear_all()
+        self.set_color(color)
 
-    def _tick(self, timer=None):
-        hour1, hour2, minute1, minute2, second1, second2 = self._time.getTime()
+    def clear_all(self):
+        for i in range(self.leds_strip.n):
+            self.leds_strip[i] = (0, 0, 0)
+
+        self.leds_strip.write()
+
+    def tick(self, timer=None):
+        hour1, hour2, minute1, minute2, second1, second2 = self.time.get_time()
         updated = False
 
-        updated |= self._checkUpdate(1, self._hour1, hour1)
-        updated |= self._checkUpdate(2, self._hour2, hour2)
-        updated |= self._checkUpdate(3, self._minute1, minute1)
-        updated |= self._checkUpdate(4, self._minute2, minute2)
-        updated |= self._checkUpdateSeconds(self._second, second2)
+        updated |= self.check_update(1, self.hour1, hour1)
+        updated |= self.check_update(2, self.hour2, hour2)
+        updated |= self.check_update(3, self.minute1, minute1)
+        updated |= self.check_update(4, self.minute2, minute2)
+        updated |= self.check_update_seconds(self.second, second2)
 
         if updated:
-            self._ledsStrip.write()
+            self.leds_strip.write()
 
-        self._hour1 = hour1
-        self._hour2 = hour2
-        self._minute1 = minute1
-        self._minute2 = minute2
-        self._second = second2
+        self.hour1 = hour1
+        self.hour2 = hour2
+        self.minute1 = minute1
+        self.minute2 = minute2
+        self.second = second2
 
-    def _checkUpdate(self, position, prevValue, newValue):
+    def check_update(self, position, prevValue, newValue):
         if prevValue != newValue:
-            self._update(position, newValue, self._rgb)
+            self.update(position, newValue, self.rgb)
             return True
 
         return False
 
-    def _update(self, position, value, rgb):
-        start = self._digits[position - 1]
+    def update(self, position, value, rgb):
+        start = DIGIT[position - 1]
 
         for i in range (start, start + 7 * 2):
-            self._ledsStrip[i] = (0, 0, 0)
+            self.leds_strip[i] = (0, 0, 0)
 
         if value == 0:
             leds = [0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13]
@@ -89,100 +93,107 @@ class Clock:
             leds = [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13]
 
         for led in leds:
-            self._ledsStrip[led + start] = rgb
-            
+            self.leds_strip[led + start] = rgb
 
-    def _checkUpdateSeconds(self, prevValue, newValue):
+    def check_update_seconds(self, prevValue, newValue):
         if prevValue != newValue:
             if newValue % 2:
-                value = self._rgb
+                value = self.rgb
             else:
                 value = (0, 0, 0)
 
-            self._ledsStrip[self._dots] = self._ledsStrip[self._dots + 1] = value
+            self.leds_strip[DOTS] = self.leds_strip[DOTS + 1] = value
 
             return True
 
         return False
 
-    def _forceRefresh(self):
-        self._hour1 = self._hour2 = self._minute1 = self._minute2 = self._second = -1
-        self._tick()
+    def force_refresh(self):
+        self.hour1 = self.hour2 = self.minute1 = self.minute2 = self.second = -1
+        self.tick()
 
-    def startClock(self):
-        self._hour1 = self._hour2 = self._minute1 = self._minute2 = self._second = -1
-        self.clearAll()
-        self._tick()
-        self._tickTimer.init(period=250, mode=Timer.PERIODIC, callback=self._tick)
+    def display(self):
+        print("> Clock started")
+        self.hour1 = self.hour2 = self.minute1 = self.minute2 = self.second = -1
+        self.clear_all()
+        self.tick()
+        self.tick_timer.init(period=250, mode=Timer.PERIODIC, callback=self.tick)
 
-    def stopClock(self):
-        self._tickTimer.deinit()
+    def stop_clock(self):
+        self.tick_timer.deinit()
 
-    def displayScoreboard(self):
-        self._update(1, floor(self.scoreGreen / 10), (0, 255, 0))
-        self._update(2, self.scoreGreen % 10, (0, 255, 0))
-        self._update(3, floor(self.scoreRed / 10), (255, 0, 0))
-        self._update(4, self.scoreRed % 10, (255, 0, 0))
+    def display_scoreboard(self):
+        self.update(1, floor(self.score_green / 10), (0, 255, 0))
+        self.update(2, self.score_green % 10, (0, 255, 0))
+        self.update(3, floor(self.score_red / 10), (255, 0, 0))
+        self.update(4, self.score_red % 10, (255, 0, 0))
 
-        self._ledsStrip[self._dots] = self._ledsStrip[self._dots + 1] = (255, 255, 255)
+        self.leds_strip[DOTS] = self.leds_strip[DOTS + 1] = (255, 255, 255)
 
-        self._ledsStrip.write()
+        self.leds_strip.write()
 
-    def updateScoreboardGreen(self, increment):
-        if self.scoreGreen + increment >= 0 and self.scoreGreen + increment <= 99:
-            self.scoreGreen += increment
-            self.displayScoreboard()
+    def update_scoreboard_green(self, increment):
+        if self.score_green + increment >= 0 and self.score_green + increment <= 99:
+            self.score_green += increment
+            self.display_scoreboard()
 
-    def updateScoreboardRed(self, increment):
-        if self.scoreRed + increment >= 0 and self.scoreRed + increment <= 99:
-            self.scoreRed += increment
-            self.displayScoreboard()
+    def update_scoreboard_red(self, increment):
+        if self.score_red + increment >= 0 and self.score_red + increment <= 99:
+            self.score_red += increment
+            self.display_scoreboard()
 
-    def resetScoreboard(self):
-        self.scoreGreen = self.scoreRed = 0
-        self.displayScoreboard()
+    def reset_scoreboard(self):
+        self.score_green = self.score_red = 0
+        self.display_scoreboard()
 
-    def setColor(self, h):
-        self._rgb = colors.hexToRgb(h)
-        r, g, b = self._rgb
-        h, s, v = colors.rgbToHsv(r, g, b)
-        self._hsv = (h, s, v)
+    def set_color(self, hex):
+        if isinstance(hex, bytes):
+            hex = hex.decode('ascii')
 
-        self._forceRefresh()
+        self.hex = hex
+        self.rgb = colors.hex_to_rgb(hex)
 
-    def setBrighter(self):
-        self._rgb = colors.brighter(self._rgb, self._hsv)
-        self._forceRefresh()
+        print("hex: {} | rgb: {}".format(self.hex, self.rgb))
 
-    def setDarker(self):
-        self._rgb = colors.darker(self._rgb, self._hsv)
-        self._forceRefresh()
+        self.force_refresh()
 
-    def playEffectInit(self, period):
-        self._effectOriginal = self._effectInit.copy()
-        self._effectToPlay = []
-        self.stopEffectInit = False
+    def set_brighter(self):
+        self.rgb = colors.brighter(self.rgb)
+        self.hex = colors.rgb_to_hex(self.rgb)
+        self.force_refresh()
 
-        self.clearAll()
+    def set_darker(self):
+        self.rgb = colors.darker(self.rgb)
+        self.hex = colors.rgb_to_hex(self.rgb)
+        self.force_refresh()
+
+    def play_spinner(self, period, color):
+        gc.collect()
+
+        self.effect_original = EFFECT_INIT.copy()
+        self.effect_to_play = []
+        self.stop_effect_init = False
+        self.effect_color = color
+
+        self.clear_all()
 
         timer = Timer(-1)
-        timer.init(period=period, mode=Timer.PERIODIC, callback=self._tickEffectInit)
+        timer.init(period=period, mode=Timer.PERIODIC, callback=self.play_spinner_tick)
 
-    def _tickEffectInit(self, timer):
-        if self.stopEffectInit:
+    def play_spinner_tick(self, timer):
+        if self.stop_effect_init:
             timer.deinit()
         else:
-            if len(self._effectToPlay) == 0:
-                self._effectToPlay = self._effectOriginal.copy()
+            if len(self.effect_to_play) == 0:
+                self.effect_to_play = self.effect_original.copy()
 
-            currentStep = self._effectToPlay.pop(0)
+            currentStep = self.effect_to_play.pop(0)
 
-            for start in self._digits:
+            for start in DIGIT:
                 for i in range (start, start + 7 * 2):
-                    self._ledsStrip[i] = (0, 0, 0)
+                    self.leds_strip[i] = (0, 0, 0)
                     
-                self._ledsStrip[start + currentStep[0]] = (0, 255, 0)
-                self._ledsStrip[start + currentStep[1]] = (0, 255, 0)
+                self.leds_strip[start + currentStep[0]] = self.effect_color
+                self.leds_strip[start + currentStep[1]] = self.effect_color
 
-            self._ledsStrip.write()
-
+            self.leds_strip.write()
