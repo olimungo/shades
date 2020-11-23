@@ -119,7 +119,7 @@ class Clock:
         self.tick()
         self.tick_timer.init(period=250, mode=Timer.PERIODIC, callback=self.tick)
 
-    def stop_clock(self):
+    def stop(self):
         self.tick_timer.deinit()
 
     def display_scoreboard(self):

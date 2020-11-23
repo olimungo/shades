@@ -2,6 +2,7 @@ from uasyncio import get_event_loop, sleep_ms
 from gc import collect, mem_free
 from machine import reset
 from time import sleep
+from network import WLAN, STA_IF
 
 from WifiManager import WifiManager
 from HttpServer import HttpServer, HEADER_OK
@@ -23,9 +24,9 @@ class Mode:
 
 class Main:
     def __init__(self):
+        self.sta_if = WLAN(STA_IF)
         self.settings = Settings().load()
         self.credentials = Credentials().load()
-
         self.mode = Mode.CLOCK
 
         self.wifi = WifiManager(PUBLIC_NAME % self.settings.net_id)
@@ -59,27 +60,28 @@ class Main:
 
         self.loop = get_event_loop()
         self.loop.create_task(self.handle())
+        self.loop.create_task(self.check_wifi())
         self.loop.run_forever()
         self.loop.close()
 
     async def check_wifi(self):
         while True:
-            # self.clock.play_spinner(SPINNER_RATE, ORANGE)
+            self.clock.play_spinner(SPINNER_RATE, ORANGE)
 
             while not self.sta_if.isconnected():
                 await sleep_ms(1000)
 
-            self.clock.stop_clock()
+            self.clock.stop()
             self.clock.stop_effect_init = True
             self.clock.display()
 
-            while  self.sta_if.isconnected():
+            while self.sta_if.isconnected():
                 await sleep_ms(1000)
 
     async def handle(self):
         while True:
             self.http.handle()
-            await sleep_ms(30)
+            await sleep_ms(50)
 
     def settings_values(self, params):
         essid = self.credentials.essid
@@ -157,7 +159,7 @@ class Main:
     def brightness_more(self, params):
         self.display_clock()
         self.clock.set_brighter()
-        self.settings.color = b"" + self.clock.hex
+        self.settings.color = b"%s" % self.clock.hex
         self.settings.write()
 
         return b"", HEADER_OK
@@ -165,7 +167,7 @@ class Main:
     def brightness_less(self, params):
         self.display_clock()
         self.clock.set_darker()
-        self.settings.color = b"" + self.clock.hex
+        self.settings.color = b"%s" % self.clock.hex
         self.settings.write()
 
         return b"", HEADER_OK
