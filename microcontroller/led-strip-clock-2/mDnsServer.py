@@ -1,5 +1,5 @@
 from time import ticks_ms, ticks_diff
-from select import select
+from uselect import select
 from ustruct import pack_into, unpack_from
 from usocket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, IPPROTO_IP, IP_ADD_MEMBERSHIP
 from uasyncio import get_event_loop, sleep_ms
@@ -35,10 +35,14 @@ class mDnsServer:
 
     async def check_request(self):
         while True:
+            self.connected = False
+
             while not self.sta_if.isconnected():
                 await sleep_ms(WAIT_FOR_CONNECT)
 
             self.connect()
+            
+            self.connected = True
 
             print("> mDNS server up and running")
 
@@ -51,8 +55,7 @@ class mDnsServer:
     def connect(self):
         try:
             print("> mDNS start or restart")
-
-            self.sock = self.make_socket()
+            self.make_socket()
             self.advertise_hostname()
         except Exception as e:
             print("> mDnsServer.connect error: {}".format(e))
@@ -62,20 +65,18 @@ class mDnsServer:
 
         self.ip = self.sta_if.ifconfig()[0]
 
-        sock = socket(AF_INET, SOCK_DGRAM)
-        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.sock = socket(AF_INET, SOCK_DGRAM)
+        self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
         member_info = dotted_ip_to_bytes(MDNS_ADDR.decode('ascii')) + dotted_ip_to_bytes(self.ip)
 
-        sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, member_info)
-        sock.bind(("", MDNS_PORT))
+        self.sock.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, member_info)
+        self.sock.bind(("", MDNS_PORT))
 
         self.adverts = []
         self._reply_buffer = None
         self._pending_question = None
         self.answered = False
-
-        return sock
 
     def advertise_hostname(self, find_vacant=True):
         collect()

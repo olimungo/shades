@@ -7,11 +7,13 @@ from network import WLAN, STA_IF
 from WifiManager import WifiManager
 from HttpServer import HttpServer
 from mDnsServer import mDnsServer
+from MqttManager import MqttManager
 from Clock import Clock
 from Settings import Settings
 from Credentials import Credentials
 
-PUBLIC_NAME = b"Clock-%s"
+PUBLIC_NAME = b"Clock"
+BROKER_NAME = b"nestor.local"
 ORANGE = (255, 98, 0)
 SPINNER_RATE = const(120)
 
@@ -30,8 +32,9 @@ class Main:
         self.credentials = Credentials().load()
         self.mode = Mode.CLOCK
 
-        self.wifi = WifiManager(PUBLIC_NAME % self.settings.net_id)
-        self.mdns = mDnsServer("toto", "1")
+        self.wifi = WifiManager(b"%s-%s" % (PUBLIC_NAME, self.settings.net_id))
+        self.mdns = mDnsServer(PUBLIC_NAME.decode('ascii').lower(), self.settings.net_id.decode('ascii'))
+        self.mqtt = MqttManager(self.mdns, BROKER_NAME.decode('ascii'), self.settings.net_id.decode('ascii'), PUBLIC_NAME.decode('ascii').lower())
 
         routes = {
             b"/": b"./index.html",
@@ -76,6 +79,15 @@ class Main:
 
             while self.sta_if.isconnected():
                 await sleep_ms(1000)
+
+    async def check_mqtt(self):
+        while True:
+            message = self.mqtt.check_messages()
+
+            if message:
+                print("message: {}".format(message))
+                
+            await sleep_ms(500)
 
     def settings_values(self, params):
         essid = self.credentials.essid

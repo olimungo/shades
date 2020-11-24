@@ -5,7 +5,8 @@ from uasyncio import get_event_loop, sleep
 from Credentials import Credentials, FILE
     
 AP_IP = "192.168.4.1"
-WAIT_FOR_CONNECT = const(4)
+WAIT_FOR_CONNECT = const(3)
+WAIT_FOR_RECONNECT = const(10)
 
 class WifiManager:
     ip = "0.0.0.0"
@@ -69,7 +70,7 @@ class WifiManager:
                 await sleep(1)
 
     async def connect(self, autoLoop=False):
-        if not self.sta_if.isconnected():
+        if not self.sta_if.isconnected() or not autoLoop:
             if self.credentials.load().is_valid():
                 print("> Connecting to {:s}/{:s}".format(self.credentials.essid, self.credentials.password))
 
@@ -78,10 +79,8 @@ class WifiManager:
                 await sleep(WAIT_FOR_CONNECT)
 
                 if not self.sta_if.isconnected():
-                    print("> Connection failed. WLAN status={:d}".format(self.sta_if.status()))
-
                     if autoLoop:
-                        await sleep(30)
+                        await sleep(WAIT_FOR_RECONNECT)
                         self.loop.create_task(self.connect(True))
             else:
                 print("> No valid credentials file: {}".format(FILE))
