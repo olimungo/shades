@@ -433,7 +433,7 @@
 
             xhr.onload = function () {
                 if (xhr.status == 200) {
-                    console.log(xhr.response);
+                    const response = JSON.parse(xhr.response);
 
                     setTagValue('ip', response.ip);
                     setTagValue('net-id', response.netId);
