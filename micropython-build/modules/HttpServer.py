@@ -26,7 +26,7 @@ class HttpServer:
         self.poller.register(self.sock, POLLIN)
 
         self.loop = get_event_loop()
-        self.loop.create_task(self.handle())
+        self.loop.create_task(self.check_request())
 
     def split_request(self, request):
         method = ""
@@ -109,7 +109,7 @@ class HttpServer:
         client.send(response)
         client.close()
     
-    async def handle(self):
+    async def check_request(self):
         while True:
             try:
                 collect()
@@ -135,6 +135,6 @@ class HttpServer:
                         else:
                             self.no_content(client)
             except Exception as e:
-                print("> HttpServer.handle exception: {}".format(e))
+                print("> HttpServer.check_request exception: {}".format(e))
 
             await sleep_ms(IDLE_TIME_BETWEEN_CHECKS)

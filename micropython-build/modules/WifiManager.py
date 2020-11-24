@@ -59,7 +59,7 @@ class WifiManager:
 
             self.ip = self.sta_if.ifconfig()[0]
 
-            print("> Connected to {} with IP: {}".format(self.credentials.essid, self.ip))
+            print("> Connected to {} with IP: {}".format(self.credentials.essid.decode('ascii'), self.ip))
 
             if self.ap_if.active():
                 print("> Shuting down AP")

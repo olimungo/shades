@@ -6,6 +6,7 @@ from network import WLAN, STA_IF
 
 from WifiManager import WifiManager
 from HttpServer import HttpServer
+from mDnsServer import mDnsServer
 from Clock import Clock
 from Settings import Settings
 from Credentials import Credentials
@@ -30,6 +31,7 @@ class Main:
         self.mode = Mode.CLOCK
 
         self.wifi = WifiManager(PUBLIC_NAME % self.settings.net_id)
+        self.mdns = mDnsServer("toto", "1")
 
         routes = {
             b"/": b"./index.html",
