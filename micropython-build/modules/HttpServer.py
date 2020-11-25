@@ -123,7 +123,7 @@ class HttpServer:
                     if request:
                         method, path, params = self.split_request(request)
 
-                        print("REQUEST => Method: {} | path: {}: params: {}".format(method, path, params))
+                        print("REQUEST => Method: {} | path: {} | params: {}".format(method, path, params))
 
                         route = self.routes.get(path.encode('ascii'), None)
 

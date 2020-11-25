@@ -1,6 +1,6 @@
 from machine import reset, freq
 from esp import sleep_type, SLEEP_NONE, osdebug
-# import webrepl
+import webrepl
 
 osdebug(None)
 
@@ -9,7 +9,7 @@ print("\n\nJust Do It Yourself World Company Incorporated (c) from 2020 to etern
 # freq(160000000)
 sleep_type(SLEEP_NONE)
 
-# webrepl.start()
+webrepl.start()
 
 def rst():
     reset()

@@ -63,31 +63,34 @@ class Main:
 
         self.loop = get_event_loop()
         self.loop.create_task(self.check_wifi())
+        # self.loop.create_task(self.check_mqtt())
         self.loop.run_forever()
         self.loop.close()
 
     async def check_wifi(self):
         while True:
+            self.clock.stop()
             self.clock.play_spinner(SPINNER_RATE, ORANGE)
+
+            await sleep_ms(2000)
 
             while not self.sta_if.isconnected():
                 await sleep_ms(1000)
 
-            self.clock.stop()
             self.clock.stop_effect_init = True
             self.clock.display()
 
             while self.sta_if.isconnected():
                 await sleep_ms(1000)
 
-    async def check_mqtt(self):
-        while True:
-            message = self.mqtt.check_messages()
+    # async def check_mqtt(self):
+    #     while True:
+    #         message = self.mqtt.check_messages()
 
-            if message:
-                print("message: {}".format(message))
+    #         if message:
+    #             print("message: {}".format(message))
 
-            await sleep_ms(500)
+    #         await sleep_ms(500)
 
     def settings_values(self, params):
         essid = self.credentials.essid
@@ -116,7 +119,7 @@ class Main:
 
     def display_scoreboard(self, params=None):
         if self.mode == Mode.CLOCK:
-            self.clock.stop_clock()
+            self.clock.stop()
             self.mode = Mode.SCOREBOARD
             self.clock.display_scoreboard()
 
@@ -133,16 +136,16 @@ class Main:
             self.settings.write()
 
     def scoreboard_green_more(self, params):
-        return self.scoreboard_update(Player.GREEN, 1)
+        self.scoreboard_update(Player.GREEN, 1)
 
     def scoreboard_green_less(self, params):
-        return self.scoreboard_update(Player.GREEN, -1)
+        self.scoreboard_update(Player.GREEN, -1)
 
     def scoreboard_red_more(self, params):
-        return self.scoreboard_update(Player.RED, 1)
+        self.scoreboard_update(Player.RED, 1)
 
     def scoreboard_red_less(self, params):
-        return self.scoreboard_update(Player.RED, -1)
+        self.scoreboard_update(Player.RED, -1)
 
     def scoreboard_update(self, player, increment):
         if player == Player.GREEN:
@@ -150,7 +153,7 @@ class Main:
         else:
             self.clock.update_scoreboard_red(increment)
 
-        return self.display_scoreboard()
+        self.display_scoreboard()
 
     def brightness_more(self, params):
         self.display_clock()

@@ -5,7 +5,7 @@ from uasyncio import get_event_loop, sleep
 from Credentials import Credentials, FILE
     
 AP_IP = "192.168.4.1"
-WAIT_FOR_CONNECT = const(3)
+WAIT_FOR_CONNECT = const(6)
 WAIT_FOR_RECONNECT = const(10)
 
 class WifiManager:
@@ -44,8 +44,6 @@ class WifiManager:
         print("> AP mode configured: {} ".format(self.ap_essid.decode("utf-8")), self.ap_if.ifconfig())
             
     async def check_wifi(self):
-        await sleep(WAIT_FOR_CONNECT)
-
         while True:
             self.loop.create_task(self.connect(True))
 
@@ -63,6 +61,9 @@ class WifiManager:
             print("> Connected to {} with IP: {}".format(self.credentials.essid.decode('ascii'), self.ip))
 
             if self.ap_if.active():
+                # Leave a bit of time so the client can retrieve the Wifi IP address
+                await sleep(10)
+
                 print("> Shuting down AP")
                 self.ap_if.active(False)
 
