@@ -81,7 +81,7 @@ class mDnsServer:
     def advertise_hostname(self, find_vacant=True):
         collect()
 
-        hostname = check_name(self.public_name)
+        hostname = check_name(self.public_name.decode('ascii'))
         n = len(hostname)
 
         if n == 1:
@@ -233,7 +233,7 @@ class mDnsServer:
 
     def set_net_id(self, net_id):
         self.net_id = net_id
-        self.public_name = "{}-{}".format(self.hostname, self.net_id)
+        self.public_name = b"%s-%s" % (self.hostname, self.net_id)
 
         if (self.sta_if.isconnected()):
             self.connect()

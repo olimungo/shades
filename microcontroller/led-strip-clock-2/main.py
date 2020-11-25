@@ -33,8 +33,8 @@ class Main:
         self.mode = Mode.CLOCK
 
         self.wifi = WifiManager(b"%s-%s" % (PUBLIC_NAME, self.settings.net_id))
-        self.mdns = mDnsServer(PUBLIC_NAME.decode('ascii').lower(), self.settings.net_id.decode('ascii'))
-        self.mqtt = MqttManager(self.mdns, BROKER_NAME.decode('ascii'), self.settings.net_id.decode('ascii'), PUBLIC_NAME.decode('ascii').lower())
+        self.mdns = mDnsServer(PUBLIC_NAME.lower(), self.settings.net_id)
+        self.mqtt = MqttManager(self.mdns, BROKER_NAME, self.settings.net_id, PUBLIC_NAME.lower())
 
         routes = {
             b"/": b"./index.html",
@@ -86,7 +86,7 @@ class Main:
 
             if message:
                 print("message: {}".format(message))
-                
+
             await sleep_ms(500)
 
     def settings_values(self, params):
@@ -174,6 +174,7 @@ class Main:
         if id:
             self.settings.net_id = id
             self.settings.write()
+            self.mdns.set_net_id(id)
 
     def settings_group(self, params):
         name = params.get(b"name", None)

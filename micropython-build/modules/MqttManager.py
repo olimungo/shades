@@ -4,9 +4,9 @@ from machine import unique_id
 from uasyncio import get_event_loop, sleep_ms
 from network import WLAN, STA_IF
 
-WAIT_FOR_MDNS = const(5000)
+WAIT_FOR_MDNS = const(1000)
+WAIT_FOR_CONNECT = const(3000)
 WAIT_FOR_MESSAGE = const(500)
-WAIT_BEFORE_RETRY = const(5000)
 
 class MqttManager:
     def __init__(self, mdns, broker_name, net_id, topic_name):
@@ -14,9 +14,9 @@ class MqttManager:
         self.mdns = mdns
         self.broker_name = broker_name
         self.net_id = net_id
-        self.commands_topic = "commands/{}".format(topic_name)
-        self.states_topic = "states/{}".format(topic_name)
-        self.logs_topic = "logs/{}".format(topic_name)
+        self.commands_topic = b"commands/%s" % topic_name
+        self.states_topic = b"states/%s" % topic_name
+        self.logs_topic = b"logs/%s" % topic_name
 
         self.loop = get_event_loop()
         self.connected = False
@@ -29,37 +29,38 @@ class MqttManager:
             while not self.mdns.connected:
                 await sleep_ms(WAIT_FOR_MDNS)
 
-            self.connect()
+            while not self.connected:
+                self.connect()
+                await sleep_ms(WAIT_FOR_CONNECT)
 
-            if self.mdns.connected and self.connected:
-                print("> MQTT server up and running")
+            print("> MQTT client connected to {}".format(self.broker_name.decode('ascii')))
 
-            while self.mdns.connected and self.connected:
+            while self.connected:
                 self.check_msg()
                 await sleep_ms(WAIT_FOR_MESSAGE)
 
             print("> MQTT server down")
             self.connected = False
 
-            await sleep_ms(WAIT_BEFORE_RETRY)
-
     def connect(self):
         try:
             client_id = hexlify(unique_id())
 
-            brokerIp = self.mdns.resolve_mdns_address(self.broker_name)
+            broker_ip = self.mdns.resolve_mdns_address(self.broker_name.decode('ascii'))
 
-            if brokerIp != None:
-                brokerIp = "{}.{}.{}.{}".format(*brokerIp)
+            if broker_ip != None:
+                broker_ip = "{}.{}.{}.{}".format(*broker_ip)
 
-                self.mqtt = MQTTClient(client_id, brokerIp)
+                self.mqtt = MQTTClient(client_id, broker_ip)
                 self.mqtt.set_callback(self.message_received)
                 self.mqtt.connect()
-                self.mqtt.subscribe("{}/{}".format(self.commands_topic, self.net_id))
+
+                self.mqtt.subscribe((b"%s/%s" % (self.commands_topic, self.net_id)))
 
                 self.connected = True
 
-                self.log("IP assigned: {}".format(self.sta_if.ifconfig()[0]))
+                self.log(b"IP assigned: %s" % (self.sta_if.ifconfig()[0]))
+                self.publish_state("Yo!")
         except Exception as e:
             print("> MQTT broker connect error: {}".format(e))
 
@@ -67,23 +68,22 @@ class MqttManager:
         try:
             self.mqtt.check_msg()
         except Exception as e:
-            print("> MQTT broker check_msg error: {}".format(e))
             self.connected = False
 
     def message_received(self, topic, message):
-        self.messages.append(message.decode("utf-8"))
+        self.messages.append(message)
 
     def publish_state(self, message):
         if self.connected:
             try:
-                self.mqtt.publish("{}/{}".format(self.states_topic, self.net_id), message)
+                self.mqtt.publish(b"%s/%s" % (self.states_topic, self.net_id), message)
             except Exception as e:
                 print("> MQTT broker publish_state error: {}".format(e))
 
     def log(self, message):
         if self.connected:
             try:
-                self.mqtt.publish("{}/{}".format(self.logs_topic, self.net_id), message)
+                self.mqtt.publish(b"%s/%s" % (self.logs_topic, self.net_id), message)
             except Exception as e:
                 print("> MQTT broker log error: {}".format(e))
 
