@@ -20,7 +20,7 @@ class HttpServer:
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.sock.bind(("", HTTP_PORT))
-        self.sock.listen(1)
+        self.sock.listen(3)
         
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)

@@ -1,6 +1,7 @@
 from network import WLAN, STA_IF, AP_IF, AUTH_OPEN
 from ubinascii import hexlify
 from uasyncio import get_event_loop, sleep
+from Blink import Blink
 
 from Credentials import Credentials, FILE
     
@@ -58,6 +59,8 @@ class WifiManager:
 
             self.ip = self.sta_if.ifconfig()[0]
 
+            Blink().flash3TimesFast()
+            
             print("> Connected to {} with IP: {}".format(self.credentials.essid.decode('ascii'), self.ip))
 
             if self.ap_if.active():

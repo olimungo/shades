@@ -6,7 +6,7 @@ from network import WLAN, STA_IF
 
 WAIT_FOR_MDNS = const(1000)
 WAIT_FOR_CONNECT = const(3000)
-WAIT_FOR_MESSAGE = const(500)
+WAIT_FOR_MESSAGE = const(100)
 
 class MqttManager:
     def __init__(self, mdns, broker_name, net_id, topic_name):
@@ -60,7 +60,6 @@ class MqttManager:
                 self.connected = True
 
                 self.log(b"IP assigned: %s" % (self.sta_if.ifconfig()[0]))
-                self.publish_state("Yo!")
         except Exception as e:
             print("> MQTT broker connect error: {}".format(e))
 

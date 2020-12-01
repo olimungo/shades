@@ -16,7 +16,7 @@
         {
             "label": "Upload All",
             "type": "shell",
-            "command": "pkill -f mpfshell; cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1460; mput .*\\.py; mput index.html'",
+            "command": "pkill -f mpfshell; cd ${fileDirname}; mpfshell -n -c 'open tty.usbserial-1460; mput .*\\.py; mput index.html; mput style.css; mput scripts.js'",
             "group": "build",
             "problemMatcher": [],
             "presentation": {

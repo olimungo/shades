@@ -19,12 +19,14 @@ CLASS_IN = const(1)
 TYPE_A = const(1)
 
 WAIT_FOR_CONNECT = const(1000)
+WAIT_MORE_FOR_CONNECT = const(8000)
 WAIT_FOR_REQUEST = const(500)
 
 class mDnsServer:
     def __init__(self, hostname, net_id):
         self.sta_if = WLAN(STA_IF)
         self.hostname = hostname
+        self.connected = False
 
         self.set_net_id(net_id)
 
@@ -39,6 +41,9 @@ class mDnsServer:
 
             while not self.sta_if.isconnected():
                 await sleep_ms(WAIT_FOR_CONNECT)
+            
+            # Wait a bit more so other services have the time to start up
+            await sleep_ms(WAIT_MORE_FOR_CONNECT)
 
             self.connect()
             
@@ -176,8 +181,8 @@ class mDnsServer:
                     self.process_packet(memoryview(buf), addr)
 
                     del buf
-                except IndexError:
-                    print("> Index error processing packet; probably malformed data")
+                except IndexError as e:
+                    print("> Index error processing packet; probably malformed data: {}".format(e))
                 except Exception as e:
                     print("> Error processing packet: {}".format(e))
 
