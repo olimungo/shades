@@ -1,14 +1,11 @@
-from micropython import const
 import framebuf
 
-_NOOP = const(0)
 _DIGIT0 = const(1)
 _DECODEMODE = const(9)
 _INTENSITY = const(10)
 _SCANLIMIT = const(11)
 _SHUTDOWN = const(12)
 _DISPLAYTEST = const(15)
-
 
 class Matrix8x8:
     def __init__(self, spi, cs, num):

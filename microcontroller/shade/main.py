@@ -14,6 +14,7 @@ from Credentials import Credentials
 
 PUBLIC_NAME = b"Shade"
 BROKER_NAME = b"nestor.local"
+MQTT_TOPIC_NAME = b"shades"
 
 class Main:
     def __init__(self):
@@ -23,7 +24,7 @@ class Main:
 
         self.wifi = WifiManager(b"%s-%s" % (PUBLIC_NAME, self.settings.net_id))
         self.mdns = mDnsServer(PUBLIC_NAME.lower(), self.settings.net_id)
-        self.mqtt = MqttManager(self.mdns, BROKER_NAME, self.settings.net_id, PUBLIC_NAME.lower())
+        self.mqtt = MqttManager(self.mdns, BROKER_NAME, self.settings.net_id, MQTT_TOPIC_NAME)
 
         routes = {
             b"/": b"./index.html",
@@ -49,6 +50,7 @@ class Main:
         self.loop = get_event_loop()
         self.loop.create_task(self.check_wifi())
         self.loop.create_task(self.check_mqtt())
+        self.loop.create_task(self.send_state())
         self.loop.run_forever()
         self.loop.close()
 
@@ -59,22 +61,40 @@ class Main:
             while not self.sta_if.isconnected():
                 await sleep_ms(1000)
 
+            self.send_state_mqtt()
+
             while self.sta_if.isconnected():
                 await sleep_ms(1000)
 
     async def check_mqtt(self):
         while True:
-            # message = self.mqtt.check_messages()
+            while self.mqtt.connected:
+                self.check_message_mqtt()
 
-            # if not message == None:
-            #     if message == "up":
-            #         self.motor.goUp()
-            #     elif message == "down":
-            #         self.motor.goDown()
-            #     elif message == "stop":
-            #         self.motor.stop()
+                if self.motor.check_stopped_by_ir_sensor():
+                    self.send_state_mqtt()
 
-            await sleep_ms(500)
+                await sleep_ms(100)
+
+            while not self.mqtt.connected:
+                await sleep_ms(1000)
+
+            self.send_state_mqtt()
+
+    def check_message_mqtt(self):
+        try:
+            message = self.mqtt.check_messages()
+
+            if message:
+                if message == b"up":
+                    self.go_up()
+                elif message == b"down":
+                    self.go_down()
+                elif message == b"stop":
+                    self.stop()
+
+        except Exception as e:
+            print("> Main.check_message_mqtt exception: {}".format(e))
 
     def settings_values(self, params):
         essid = self.credentials.essid
@@ -83,7 +103,7 @@ class Main:
             essid = b""
 
         result = b'{"ip": "%s", "netId": "%s", "group": "%s", "motorReversed": "%s", "essid": "%s"}' % (self.wifi.ip, self.settings.net_id,
-            self.settings.motor_reversed, self.settings.group, essid)
+            self.settings.group, self.settings.motor_reversed, essid)
 
         return result
 
@@ -99,15 +119,15 @@ class Main:
 
     def go_up(self, params=None):
         self.motor.go_up()
-        self.send_state()
+        self.send_state_mqtt()
 
     def go_down(self, params=None):
         self.motor.go_down()
-        self.send_state()
+        self.send_state_mqtt()
 
-    def stop(self, params):
+    def stop(self, params=None):
         self.motor.stop()
-        self.send_state()
+        self.send_state_mqtt()
 
     def settings_net(self, params):
         id = params.get(b"id", None)
@@ -116,6 +136,9 @@ class Main:
             self.settings.net_id = id
             self.settings.write()
             self.mdns.set_net_id(id)
+
+            self.mdns.set_net_id(id)
+            self.mqtt.set_net_id(id)
 
     def settings_group(self, params):
         name = params.get(b"name", None)
@@ -132,10 +155,17 @@ class Main:
         else:
             motor_reversed = b"0"
 
+        self.settings.motor_reversed = motor_reversed
         self.settings.write()
+
         self.motor.reverse_direction()
 
-    def send_state(self):
+    async def send_state(self):
+        while True:
+            self.send_state_mqtt()
+            await sleep_ms(30000)
+
+    def send_state_mqtt(self):
         try:
             group = self.settings.group
             motor_state = self.motor.get_state()
@@ -144,7 +174,7 @@ class Main:
 
             self.mqtt.publish_state(state)
         except Exception as e:
-            print("> Main.send_state exception: {}".format(e))
+            print("> Main.send_state_mqtt exception: {}".format(e))
 
 try:
     collect()

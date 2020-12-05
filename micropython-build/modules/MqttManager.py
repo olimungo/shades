@@ -29,13 +29,15 @@ class MqttManager:
             while not self.mdns.connected:
                 await sleep_ms(WAIT_FOR_MDNS)
 
+
             while not self.connected:
                 self.connect()
                 await sleep_ms(WAIT_FOR_CONNECT)
 
+
             print("> MQTT client connected to {}".format(self.broker_name.decode('ascii')))
 
-            while self.connected:
+            while self.connected and self.mdns.connected:
                 self.check_msg()
                 await sleep_ms(WAIT_FOR_MESSAGE)
 
@@ -92,3 +94,7 @@ class MqttManager:
             return self.messages.pop(-len(self.messages))
 
         return None
+
+    def set_net_id(self, net_id):
+        self.net_id = net_id
+        self.connected = False

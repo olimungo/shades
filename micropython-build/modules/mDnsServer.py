@@ -18,9 +18,10 @@ FLAGS_AA = const(0x0400)
 CLASS_IN = const(1)
 TYPE_A = const(1)
 
-WAIT_FOR_CONNECT = const(1000)
-WAIT_MORE_FOR_CONNECT = const(8000)
-WAIT_FOR_REQUEST = const(500)
+WAIT_BEFORE_CONNECT = const(500)
+WAIT_MORE_BEFORE_CONNECT = const(6000)
+WAIT_FOR_CONNECT = const(500)
+WAIT_FOR_REQUEST = const(1000)
 
 class mDnsServer:
     def __init__(self, hostname, net_id):
@@ -40,18 +41,18 @@ class mDnsServer:
             self.connected = False
 
             while not self.sta_if.isconnected():
-                await sleep_ms(WAIT_FOR_CONNECT)
+                await sleep_ms(WAIT_BEFORE_CONNECT)
             
             # Wait a bit more so other services have the time to start up
-            await sleep_ms(WAIT_MORE_FOR_CONNECT)
+            await sleep_ms(WAIT_MORE_BEFORE_CONNECT)
 
-            self.connect()
-            
-            self.connected = True
+            while not self.connected:
+                self.connect()
+                await sleep_ms(WAIT_FOR_CONNECT)
 
             print("> mDNS server up and running")
 
-            while self.sta_if.isconnected():
+            while self.sta_if.isconnected() and self.connected:
                 self.process_waiting_packets()
                 await sleep_ms(WAIT_FOR_REQUEST)
 
@@ -62,6 +63,7 @@ class mDnsServer:
             print("> mDNS start or restart")
             self.make_socket()
             self.advertise_hostname()
+            self.connected = True
         except Exception as e:
             print("> mDnsServer.connect error: {}".format(e))
 
@@ -239,6 +241,4 @@ class mDnsServer:
     def set_net_id(self, net_id):
         self.net_id = net_id
         self.public_name = b"%s-%s" % (self.hostname, self.net_id)
-
-        if (self.sta_if.isconnected()):
-            self.connect()
+        self.connected = False

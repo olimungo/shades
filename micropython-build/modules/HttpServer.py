@@ -12,6 +12,7 @@ HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
 HEADER_REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: index.html\r\n\r\n"
 HEADER_NO_CONTENT = b"HTTP/1.1 204 No Content\r\n\r\n"
 HEADER_CONTENT = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %s\r\n\r\n%s"
+HEADER_CONTENT_CSS = b"HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nContent-Length: %s\r\n\r\n%s"
 
 class HttpServer:
     def __init__(self, routes):

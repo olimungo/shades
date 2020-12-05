@@ -69,7 +69,7 @@ class Motor:
 
             self.stopped_by_ir_sensor = True
 
-            self.stop()
+            self.brake()
 
     def motor_check(self, timer=0):
         self.ir_check_timer.init(period=50, mode=Timer.PERIODIC, callback=self.ir_check)
@@ -92,7 +92,7 @@ class Motor:
             )
 
     def reverse_direction(self):
-        if self.settings.motor_reversed == b"1":
+        if self.settings.load().motor_reversed == b"1":
             self.speed = -10000
         else:
             self.speed = 10000

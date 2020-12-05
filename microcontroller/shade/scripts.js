@@ -9,6 +9,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             setTagValue('net-id', response.netId);
             setTagValue('tag-net-id', response.netId);
             setTagValue('group', response.group);
+            setTagValue('motor-reversed', response.motorReversed);
             setTagValue('essid', response.essid);
 
             document.title += ` ${response.netId}`;
@@ -18,7 +19,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 function setTagValue(tagId, value) {
     const tag = document.getElementById(tagId);
-    tag.tagName == 'INPUT' ? (tag.value = value) : (tag.textContent = value);
+    tag.tagName == 'INPUT' ? tag.type == 'checkbox' ? (tag.checked = parseInt(value)) : (tag.value = value) : (tag.textContent = value);
 }
 
 function debounce(fn, wait = 100) {

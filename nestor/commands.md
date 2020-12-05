@@ -33,7 +33,7 @@ docker buildx use nestor-builder
 #### Build and push to Docker Hub
 
 ```bash
-docker buildx build --platform linux/arm/v7 -t olimungo/nestor:alpine-0.97 --push .
+docker buildx build --platform linux/arm/v7 -t olimungo/nestor:alpine-0.99 --push .
 ```
 
 #### Download and run container on Pi and inject the host IP address
@@ -49,5 +49,5 @@ docker run \
     -p 80:8081 \
     -v ~/log.txt:/home/node/app/log.txt -d \
     --name=nestor \
-    olimungo/nestor:alpine-0.97
+    olimungo/nestor:alpine-0.99
 ```

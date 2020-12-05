@@ -46,7 +46,7 @@
         {
             "label": "Erase and flash ESP with custom micropython",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",
+            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
@@ -56,7 +56,7 @@
         {
             "label": "Erase ESP",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1460 erase_flash",
+            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
@@ -66,7 +66,7 @@
         {
             "label": "Erase and Flash ESP with micropython 1.12",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 esp8266-20191220-v1.12.bin",
+            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 esp8266-20191220-v1.12.bin",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
@@ -76,7 +76,7 @@
         {
             "label": "Erase and Flash ESP with micropython 1.13",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 esp8266-20200911-v1.13.bin",
+            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 esp8266-20200911-v1.13.bin",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
@@ -86,7 +86,7 @@
         {
             "label": "Flash ESP with custom micropython",
             "type": "shell",
-            "command": "esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",
+            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
