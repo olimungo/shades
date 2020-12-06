@@ -1,10 +1,7 @@
 window.addEventListener('DOMContentLoaded', (event) => {
-    const xhr = send('/settings/values');
-
-    xhr.onload = function () {
-        if (xhr.status == 200) {
-            const response = JSON.parse(xhr.response);
-
+    fetch('/settings/values')
+        .then(response => response.json())
+        .then(response => {
             setTagValue('ip', response.ip);
             setTagValue('net-id', response.netId);
             setTagValue('tag-net-id', response.netId);
@@ -12,9 +9,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
             setTagValue('motor-reversed', response.motorReversed);
             setTagValue('essid', response.essid);
 
-            document.title += ` ${response.netId}`;
-        }
-    };
+            document.title = `Shade ${response.netId}`; 
+        });
 });
 
 function setTagValue(tagId, value) {
@@ -34,24 +30,17 @@ function debounce(fn, wait = 100) {
     };
 }
 
-function send(action) {
-    const http = new XMLHttpRequest();
-    http.open('GET', action);
-    http.send();
-
-    return http;
-}
-
 function setNetId(value) {
-    send(`/settings/net?id=${value}`);
+    fetch(`/settings/net?id=${value}`).then();
     const tag = document.getElementById('tag-net-id');
     tag.textContent = value;
+    document.title = `Shade ${value}`;
 }
 
 const debouncedSetNetId = debounce(setNetId, 500);
 
 function setGroup(value) {
-    send(`/settings/group?name=${value}`);
+    fetch(`/settings/group?name=${value}`).then();
 }
 
 const debouncedSetGroup = debounce(setGroup, 500);
@@ -59,6 +48,7 @@ const debouncedSetGroup = debounce(setGroup, 500);
 function displayMain() {
     const main = document.getElementById('main'),
         settings = document.getElementById('settings');
+
     main.classList.remove('hidden');
     settings.classList.add('hidden');
 }
@@ -66,13 +56,30 @@ function displayMain() {
 function displaySettings() {
     const main = document.getElementById('main'),
         settings = document.getElementById('settings');
+
     main.classList.add('hidden');
     settings.classList.remove('hidden');
+}
+
+async function fetchWithTimeout(resource, options) {
+    const { timeout = 8000 } = options;
+    
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+  
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal  
+    });
+    clearTimeout(id);
+  
+    return response;
 }
 
 function displayConnectionInProgress() {
     const settings = document.getElementById('settings'),
         connection = document.getElementById('connection');
+
     settings.classList.add('hidden');
     connection.classList.remove('hidden');
 
@@ -80,14 +87,12 @@ function displayConnectionInProgress() {
 }
 
 function checkConnection() {
-    const xhr = send('/settings/values');
-
-    xhr.onload = function () {
-        let tryAgain = false;
-
-        if (xhr.status == 200) {
-            const response = JSON.parse(xhr.response);
-
+    try {
+        return fetchWithTimeout('/settings/values', {
+          timeout: 3000
+        })
+        .then(response => response.json())
+        .then(response => {
             if (response.ip != "192.168.4.1") {
                 setTagValue('new-ip', response.ip);
 
@@ -96,24 +101,22 @@ function checkConnection() {
 
                 spinner.classList.add('hidden');
                 newIp.classList.remove('hidden');
-            } else {
-                tryAgain = true;
             }
-        } else {
-            tryAgain = true;
-        }
-
-        if (tryAgain) {
-            setTimeout(checkConnection, 4000)
-        }
-    };
+            else {
+                setTimeout(checkConnection, 3000);
+            }
+        });
+      } catch (error) {
+        console.log(error.name === 'AbortError');
+        setTimeout(checkConnection, 3000);
+      }
 }
 
 function connect() {
     const essid = document.getElementById('essid');
     const pwd = document.getElementById('pwd');
 
-    send(`/connect?essid=${essid.value}&password=${pwd.value}`);
+    fetch(`/connect?essid=${essid.value}&password=${pwd.value}`).then();
 
     displayConnectionInProgress();
 }

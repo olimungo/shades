@@ -18,6 +18,9 @@ class WifiManager:
         self.sta_if = WLAN(STA_IF)
         self.ap_if = WLAN(AP_IF)
 
+        self.sta_if.active(False)
+        self.sta_if.active(True)
+
         if ap_essid is None:
             ap_essid = b"ESP8266-%s" % hexlify(self.ap_if.config("mac")[-3:])
 
@@ -94,3 +97,6 @@ class WifiManager:
                         self.loop.create_task(self.connect(True))
             else:
                 print("> No valid credentials file: {}".format(FILE))
+
+    def set_ap_essid(self, ap_essid):
+        self.ap_essid = ap_essid

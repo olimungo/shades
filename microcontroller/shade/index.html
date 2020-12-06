@@ -21,7 +21,7 @@
         </div>
 
         <div class="align-vertical">
-            <button class="margin-bottom-small" onclick="send('/action/go-up')">
+            <button class="margin-bottom-small" onclick="fetch('/action/go-up').then()">
                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -1 32 32" xml:space="preserve"
                     class="svg">
                     <path d="M18.221,7.206l9.585,9.585c0.879,0.879,0.879,2.317,0,3.195l-0.8,0.801c-0.877,0.878-2.316,0.878-3.194,0 
@@ -30,7 +30,7 @@
                 </svg>
             </button>
 
-            <button class="margin-bottom-small" onclick="send('/action/stop')">
+            <button class="margin-bottom-small" onclick="fetch('/action/stop').then()">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -150 1792 2042" class="svg">
                     <path d="M1216 1184v-576q0-14-9-23t-23-9h-576q-14 0-23 9t-9 23v576q0 14 9 23t23 9h576q14 0 23-9t9-23zm448-288q0 
                         209-103 385.5t-279.5 279.5-385.5 103-385.5-103-279.5-279.5-103-385.5 
@@ -38,7 +38,7 @@
                 </svg>
             </button>
 
-            <button class="margin-bottom-large" onclick="send('/action/go-down')">
+            <button class="margin-bottom-large" onclick="fetch('/action/go-down').then()">
                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 -1 32 32" xml:space="preserve"
                     class="svg">
                     <path d="M14.77,23.795L5.185,14.21c-0.879-0.879-0.879-2.317,0-3.195l0.8-0.801c0.877-0.878,2.316-0.878,3.194,0 
@@ -81,40 +81,42 @@
 
         <div class="spacer-vertical-big"></div>
 
-        <div class="align-vertical">
-            <div class="align-horizontal space-between margin-bottom-small">
-                <div class="label">
-                    Shade number
+        <form onsubmit="return false">
+            <div class="align-vertical">
+                <div class="align-horizontal space-between margin-bottom-small">
+                    <div class="label">
+                        Shade number
+                    </div>
+
+                    <input id="net-id" type="number" onkeypress="if(this.value.length > 0) return false;"
+                        oninput="if(this.value.length > 1) return false; else debouncedSetNetId(this.value)" />
                 </div>
 
-                <input id="net-id" type="number" onkeypress="if(this.value.length > 0) return false;"
-                    oninput="if(this.value.length > 1) return false; else debouncedSetNetId(this.value)" />
-            </div>
+                <div class="align-horizontal space-between margin-bottom-small">
+                    <div class="label">
+                        Motor reversed
+                    </div>
 
-            <div class="align-horizontal space-between margin-bottom-small">
-                <div class="label">
-                    Motor reversed
+                    <input id="motor-reversed" class="switch" type="checkbox" %%MOTOR_REVERSED%%
+                        onclick="fetch('/settings/reverse-motor').then()" />
                 </div>
 
-                <input id="motor-reversed" class="switch" type="checkbox" %%MOTOR_REVERSED%%
-                    onclick="send('/settings/reverse-motor')" />
+                <div class="label align-left">Group</div>
+
+                <input id="group" type="text" class="margin-bottom-small" value="%%GROUP%%"
+                    oninput="debouncedSetGroup(this.value)" />
+
+                <div class="label align-left">SSID</div>
+
+                <input id="essid" type="text" class="margin-bottom-small" value="%%ESSID%%" />
+
+                <div class="label align-left">Password</div>
+
+                <input id="pwd" type="password" class="margin-bottom" />
+
+                <button type="submit" class="connect-button" onclick="connect()">CONNECT</button>
             </div>
-
-            <div class="label align-left">Group</div>
-
-            <input id="group" type="text" class="margin-bottom-small" value="%%GROUP%%"
-                oninput="debouncedSetGroup(this.value)" />
-
-            <div class="label align-left">SSID</div>
-
-            <input id="essid" type="text" class="margin-bottom-small" value="%%ESSID%%" />
-
-            <div class="label align-left">Password</div>
-
-            <input id="pwd" type="password" class="margin-bottom" />
-
-            <button class="connect-button" onclick="connect()">CONNECT</button>
-        </div>
+        </form>
     </div>
 
     <div id="connection" class="align-vertical hidden">

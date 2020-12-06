@@ -29,7 +29,6 @@ class MqttManager:
             while not self.mdns.connected:
                 await sleep_ms(WAIT_FOR_MDNS)
 
-
             while not self.connected:
                 self.connect()
                 await sleep_ms(WAIT_FOR_CONNECT)

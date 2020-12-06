@@ -137,6 +137,7 @@ class Main:
             self.settings.write()
             self.mdns.set_net_id(id)
 
+            self.wifi.set_ap_essid(b"%s-%s" % (PUBLIC_NAME, id))
             self.mdns.set_net_id(id)
             self.mqtt.set_net_id(id)
 
