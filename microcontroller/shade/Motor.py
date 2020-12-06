@@ -8,7 +8,7 @@ class Gpio:
     IR_SENSOR = 0  # A0 - ADC
     IR_POWER = 16  # D0
     STDBY_PWM_POWER = 4  # D2
-    IR_SENSOR_THRESHOLD_HIGH = 150
+    IR_SENSOR_THRESHOLD_HIGH = 100
 
 class MotorDirection:
     CLOCKWISE = 0

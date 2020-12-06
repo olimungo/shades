@@ -76,16 +76,6 @@ async function fetchWithTimeout(resource, options) {
     return response;
 }
 
-function displayConnectionInProgress() {
-    const settings = document.getElementById('settings'),
-        connection = document.getElementById('connection');
-
-    settings.classList.add('hidden');
-    connection.classList.remove('hidden');
-
-    setTimeout(checkConnection, 3000);
-}
-
 function checkConnection() {
     try {
         return fetchWithTimeout('/settings/values', {
@@ -93,7 +83,7 @@ function checkConnection() {
         })
         .then(response => response.json())
         .then(response => {
-            if (response.ip != "192.168.4.1") {
+            if (response.ip != '192.168.4.1') {
                 setTagValue('new-ip', response.ip);
 
                 const spinner = document.getElementById('spinner'),
@@ -107,16 +97,20 @@ function checkConnection() {
             }
         });
       } catch (error) {
-        console.log(error.name === 'AbortError');
         setTimeout(checkConnection, 3000);
       }
 }
 
 function connect() {
-    const essid = document.getElementById('essid');
-    const pwd = document.getElementById('pwd');
+    const essid = document.getElementById('essid'),
+        pwd = document.getElementById('pwd'),
+        settings = document.getElementById('settings'),
+        connection = document.getElementById('connection');
 
     fetch(`/connect?essid=${essid.value}&password=${pwd.value}`).then();
 
-    displayConnectionInProgress();
+    settings.classList.add('hidden');
+    connection.classList.remove('hidden');
+
+    setTimeout(checkConnection, 3000);
 }

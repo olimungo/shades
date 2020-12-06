@@ -21,7 +21,7 @@ TYPE_A = const(1)
 WAIT_BEFORE_CONNECT = const(500)
 WAIT_MORE_BEFORE_CONNECT = const(8000)
 WAIT_FOR_CONNECT = const(500)
-WAIT_FOR_REQUEST = const(1000)
+WAIT_FOR_REQUEST = const(250)
 
 class mDnsServer:
     def __init__(self, hostname, net_id):
