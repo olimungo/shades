@@ -1,85 +1,50 @@
-settings = []
+from uos import remove
 
+FILE = "./settings.csv"
 
-def createSettings():
-    global settings
+class Settings:
+    def __init__(self, net_id=b"0", group=b"", motor_reversed=b"0"):
+        self.net_id = net_id
+        self.group = group
+        self.motor_reversed = motor_reversed
 
-    settingsString = "0,,0,"
-    file = open("settings.txt", "w")
-    file.write(settingsString)
-    file.close
+    def write(self):
+        if self.is_valid():
+            with open(FILE, "wb") as f:
+                f.write(b",".join([self.net_id, self.group, self.motor_reversed]))
 
-    settings = settingsString.split(",")
-
-
-def readSettings():
-    global settings
-
-    if len(settings) == 0:
+    def load(self):
         try:
-            file = open("settings.txt", "r")
-            settingsString = file.read()
-            file.close
+            with open(FILE, "rb") as f:
+                contents = f.read().split(b",")
 
-            settings = settingsString.split(",")
-        except:
-            createSettings()
+            if len(contents) == 3:
+                self.net_id, self.group, self.motor_reversed = contents
 
-    return settings
+            if not self.is_valid():
+                remove()
+        except OSError as e:
+            # File not found
+            if e.args[0] == 2:
+                self.write()
 
+        return self
 
-def writeSettings(netId, essid, motorReversed, group):
-    global settings
+    def remove(self):
+        try:
+            remove(FILE)
+        except OSError:
+            pass
 
-    file = open("settings.txt", "w")
-    settingsString = netId + "," + essid + "," + motorReversed + "," + group
-    settings = settingsString.split(",")
+        self.net_id = self.group = self.motor_reversed = None
 
-    file.write(settingsString)
-    file.close()
+    def is_valid(self):
+        # Ensure the credentials are entered as bytes
+        if not isinstance(self.net_id, bytes):
+            return False
+        if not isinstance(self.group, bytes):
+            return False
+        if not isinstance(self.motor_reversed, bytes):
+            return False
 
-
-def readEssid():
-    _, essid, _, _ = readSettings()
-    return essid
-
-
-def writeEssid(essid):
-    netId, _, motorReversed, group = readSettings()
-    writeSettings(netId, essid, motorReversed, group)
-
-
-def readNetId():
-    netId, _, _, _ = readSettings()
-    return netId
-
-
-def writeNetId(netId):
-    _, essid, motorReversed, group = readSettings()
-    writeSettings(netId, essid, motorReversed, group)
-
-
-def readGroup():
-    _, _, _, group = readSettings()
-    return group
-
-
-def writeGroup(group):
-    netId, essid, motorReversed, _ = readSettings()
-    writeSettings(netId, essid, motorReversed, group)
-
-
-def readMotorReversed():
-    _, _, motorReversed, _ = readSettings()
-    return motorReversed
-
-
-def writeMotorReversed():
-    netId, essid, motorReversed, group = readSettings()
-
-    if motorReversed == "0":
-        motorReversed = "1"
-    else:
-        motorReversed = "0"
-
-    writeSettings(netId, essid, motorReversed, group)
+        return True

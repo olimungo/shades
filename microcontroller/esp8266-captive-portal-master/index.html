@@ -4,7 +4,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Clock</title>
+    <title>Clock %%NET_ID%%</title>
 
     <style>
         html {
@@ -35,7 +35,7 @@
             color: #e9f7ff;
             width: 18rem;
             height: 9rem;
-            border-width: 0.2rem;
+            border-width: .2rem;
         }
 
         .button-circle {
@@ -44,7 +44,7 @@
             font-size: 2rem;
             border-radius: 50%;
             border-color: #ffeaea;
-            border-width: 0.4rem;
+            border-width: .4rem;
         }
 
         .button-tiny {
@@ -52,7 +52,7 @@
             height: 3rem;
             font-size: 2rem;
             border-color: #ffeaea;
-            border-width: 0.4rem;
+            border-width: .4rem;
         }
 
         .button-small {
@@ -118,7 +118,7 @@
 
         .ip {
             font-size: 2rem;
-            margin: 1rem;
+            margin: 1rem
         }
 
         .svg {
@@ -251,12 +251,6 @@
             border-color: #61b400;
         }
 
-        .connection {
-            font-size: 2rem;
-            display: flex;
-            align-items: center;
-        }
-
         .footer {
             position: fixed;
             left: 0;
@@ -284,13 +278,13 @@
 
 <body>
     <div class="footer">
-        <div id="ip" class="ip"></div>
+        <div class="ip">%%IP%%</div>
     </div>
 
     <div id="main">
         <div class="title align-horizontal">
             <div>CLOCK</div>
-            <div id="tag-net-id" class="tag"></div>
+            <div id="tag-net-id" class="tag">%%NET_ID%%</div>
         </div>
 
         <div class="align-vertical">
@@ -359,9 +353,8 @@
 
             <div class="align-vertical margin-bottom-large">
                 <div class="align-horizontal margin-bottom-small">
-                    <button class="button-wide action margin-right"
-                        onclick="send('/action/clock/display')">CLOCK</button>
-                    <button class="button-wide action" onclick="send('/action/scoreboard/display')">SCOREBOARD</button>
+                    <button class="button-wide action margin-right" onclick="send('/action/clock/show')">CLOCK</button>
+                    <button class="button-wide action" onclick="send('/action/scoreboard/show')">SCOREBOARD</button>
                 </div>
             </div>
 
@@ -398,17 +391,18 @@
             <div class="align-horizontal space-between margin-bottom-small">
                 <div class="label">Clock number</div>
 
-                <input id="net-id" type="number" onkeypress="if(this.value.length > 0) return false;"
+                <input id="netId" type="number" value="%%NET_ID%%" onkeypress="if(this.value.length > 0) return false;"
                     oninput="if(this.value.length > 1) return false; else debouncedSetNetId(this.value)" />
             </div>
 
             <div class="label align-left">Group</div>
 
-            <input id="group" type="text" class="margin-bottom-small" oninput="debouncedSetGroup(this.value)" />
+            <input id="group" type="text" class="margin-bottom-small" value="%%GROUP%%"
+                oninput="debouncedSetGroup(this.value)" />
 
-            <div class="label align-left">Wifi network name (SSID)</div>
+            <div class="label align-left">SSID</div>
 
-            <input id="essid" type="text" class="margin-bottom-small" />
+            <input id="essid" type="text" class="margin-bottom-small" value="%%ESSID%%" />
 
             <div class="label align-left">Password</div>
 
@@ -416,15 +410,6 @@
 
             <button class="connect-button" onclick="connect()">CONNECT</button>
         </div>
-    </div>
-
-    <div class="connection hidden" id="connection">
-        Connection in progress...<br>
-        Please, wait 30 seconds.<br>
-
-        If the device didn't successfully connect to your Wifi,<br>
-        refresh this page and retry to connect.<br>
-        Double-check the name of the Wifi network and the password.<br>
     </div>
 
     <script>
@@ -445,12 +430,8 @@
                 }
             };
         });
-
-        function setTagValue(tagId, value) {
-            const tag = document.getElementById(tagId);
-            tag.tagName == 'INPUT' ? (tag.value = value) : (tag.textContent = value);
-        }
-
+        
+        let hour = minute = second = 0
         function debounce(fn, wait = 100) {
             let timeout;
 
@@ -465,14 +446,13 @@
 
         function send(action) {
             const http = new XMLHttpRequest();
-            http.open('GET', action);
-            http.send();
+            http.open('GET', action); http.send();
 
             return http;
         }
 
         function setNetId(value) {
-            send(`/settings/net?id=${value}`);
+            send('/settings/set-net?id=' + value);
             const tag = document.getElementById('tag-net-id');
             tag.textContent = value;
         }
@@ -480,39 +460,28 @@
         const debouncedSetNetId = debounce(setNetId, 500);
 
         function setGroup(value) {
-            send(`/settings/group?name=${value}`);
+            send('/settings/group?name=' + value);
         }
 
         const debouncedSetGroup = debounce(setGroup, 500);
 
         function displayMain() {
-            const main = document.getElementById('main'),
-                settings = document.getElementById('settings');
+            const main = document.getElementById('main'), settings = document.getElementById('settings');
             main.classList.remove('hidden');
             settings.classList.add('hidden');
         }
 
         function displaySettings() {
-            const main = document.getElementById('main'),
-                settings = document.getElementById('settings');
+            const main = document.getElementById('main'), settings = document.getElementById('settings');
             main.classList.add('hidden');
             settings.classList.remove('hidden');
-        }
-
-        function displayConnectionInProgress() {
-            const settings = document.getElementById('settings'),
-                connection = document.getElementById('connection');
-            settings.classList.add('hidden');
-            connection.classList.remove('hidden');
         }
 
         function connect() {
             const essid = document.getElementById('essid');
             const pwd = document.getElementById('pwd');
 
-            send(`/connect?essid=${essid.value}&password=${pwd.value}`);
-
-            displayConnectionInProgress();
+            send('/login?ssid=' + essid.value + '&password=' + pwd.value);
         }
     </script>
 </body>

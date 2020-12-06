@@ -29,6 +29,10 @@ exports.sendMessage = (topic, message) => {
 
 function postConnect() {
     client.subscribe('states/shades/#');
+
+    // To be removed when legacy version of the code is not in use anymore
+    client.subscribe('shades/states/#');
+
     client.subscribe('logs/#');
 
     // Remove devices which aren't alive (the ones that didn't send a message since 35 seconds)
@@ -46,13 +50,20 @@ function postConnect() {
 }
 
 function gotMessage(topic, message) {
+    let netId = null;
+
     if (topic.indexOf('logs/') > -1) {
         callbackMessageReceived('logs', topic, message);
     }
 
     if (topic.indexOf('states/shades/') > -1) {
         netId = parseInt(topic.split('states/shades/')[1]);
+    }
+    else if (topic.indexOf('shades/states/') > -1) {
+        netId = parseInt(topic.split('shades/states/')[1]);
+    }
 
+    if (netId) {
         try {
             jsonMessage = JSON.parse(message.toString());
 

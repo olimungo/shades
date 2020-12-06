@@ -19,11 +19,13 @@ class Blink:
         await self._flash(100, 200)
         await self._flash(100, 200)
 
-    async def _flashOnceSlow(self):
-        await self._flash(500, 0)
+    async def _flash3TimesSlow(self):
+        await self._flash(800, 800)
+        await self._flash(800, 800)
+        await self._flash(800, 800)
 
     def flash3TimesFast(self):
         self.loop.create_task(self._flash3TimesFast())
 
-    def flashOnceSlow(self):
-        self.loop.create_task(self._flashOnceSlow())
+    def flash3TimesSlow(self):
+        self.loop.create_task(self._flash3TimesSlow())

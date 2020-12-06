@@ -28,9 +28,9 @@ class NtpTime:
         while True:
             if self.sta_if.isconnected():
                 try:
-                    offset = get("http://worldtimeapi.org/api/ip").json()[
-                        "utc_offset"
-                    ]
+                    worldtime = get("http://worldtimeapi.org/api/ip")
+                    worldtime_json = worldtime.json()
+                    offset = worldtime_json["utc_offset"]
 
                     self.offset_hour = int(offset[1:3])
                     self.offset_minute = int(offset[4:6])
@@ -40,7 +40,7 @@ class NtpTime:
 
                     await sleep(3600)
                 except Exception as e:
-                    print("> NtpTime.get_offset error: {}".format(e))
+                    print("> NtpTime.get_offset error: {} | Response: {}".format(e, worldtime))
                     await sleep(60)
             else:
                 await sleep(60)

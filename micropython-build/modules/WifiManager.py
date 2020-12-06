@@ -1,91 +1,102 @@
 from network import WLAN, STA_IF, AP_IF, AUTH_OPEN
-from uasyncio import get_event_loop, sleep
-from UdpsServer import UdpsServer
+from ubinascii import hexlify
+from uasyncio import get_event_loop, sleep_ms
 from Blink import Blink
 
-_WAIT_FOR_FLASHING_LED = const(2)
-_IDLE_TIME_BEFORE_CHECKING = const(6)
-_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS = const(30)
-_IDLE_TIME_BETWEEN_CONNECTED_CHECKS = const(5)
-
+from Credentials import Credentials, FILE
+    
+AP_IP = "192.168.4.1"
+WAIT_FOR_CONNECT = const(6000)
+WAIT_BEFORE_RECONNECT = const(10000)
+WAIT_BEFORE_AP_SHUTDOWN = const(10000)
+CHECK_CONNECTED = const(250)
 
 class WifiManager:
-    station = WLAN(STA_IF)
-    ap = WLAN(AP_IF)
-    loop = get_event_loop()
-    apStarted = False
-    connectedToStation = False
+    ip = "0.0.0.0"
 
-    def __init__(self, essidAp, netId):
-        self.essidAp = essidAp
-        
-        self.setNetId(netId)
-        self.station.active(True)
-        self.ap.active(False)
-        self.udpsServer = UdpsServer(self)
+    def __init__(self, ap_essid=None):
+        self.sta_if = WLAN(STA_IF)
+        self.ap_if = WLAN(AP_IF)
 
-        self.loop.create_task(self._checkConnection())
+        self.sta_if.active(False)
+        self.sta_if.active(True)
 
-    async def _checkConnection(self):
-        # Leave some time to try to connect to the station
-        await sleep(_IDLE_TIME_BEFORE_CHECKING)
+        if ap_essid is None:
+            ap_essid = b"ESP8266-%s" % hexlify(self.ap_if.config("mac")[-3:])
 
-        if not self.station.isconnected():
-            print("> No Access Point found...")
-            self._startAp()
+        self.ap_essid = ap_essid
+        self.credentials = Credentials()
 
+        # Turn off station and AP interface to force a reconnect
+        self.sta_if.active(True)
+        self.ap_if.active(False)
+
+        self.loop = get_event_loop()
+        self.loop.create_task(self.check_wifi())
+            
+    async def check_wifi(self):
         while True:
-            while not self.station.isconnected():
-                await sleep(_IDLE_TIME_BETWEEN_NOT_CONNECTED_CHECKS)
+            self.loop.create_task(self.connect(True))
 
-            if self.apStarted:
-                self._stopAp()
+            if self.credentials.load().is_valid():
+                await sleep_ms(WAIT_FOR_CONNECT)
+
+            if not self.sta_if.isconnected():
+                self.loop.create_task(self.start_access_point())
+
+            while not self.sta_if.isconnected():
+                await sleep_ms(CHECK_CONNECTED)
+
+            self.ip = self.sta_if.ifconfig()[0]
 
             Blink().flash3TimesFast()
+            
+            print("> Connected to {} with IP: {}".format(self.credentials.essid.decode('ascii'), self.ip))
 
-            await sleep(_WAIT_FOR_FLASHING_LED)
+            if self.ap_if.active():
+                # Leave a bit of time so the client can retrieve the Wifi IP address
+                await sleep_ms(WAIT_BEFORE_AP_SHUTDOWN)
 
-            self.connectedToStation = True
+                print("> Shuting down AP")
+                self.ap_if.active(False)
 
-            print("> IP: {}".format(self.getIp()))
+            while self.sta_if.isconnected():
+                await sleep_ms(CHECK_CONNECTED)
 
-            while self.station.isconnected():
-                await sleep(_IDLE_TIME_BETWEEN_CONNECTED_CHECKS)
+    async def start_access_point(self):
+        self.ap_if.active(True)
+        
+        while not self.ap_if.active():
+            await sleep_ms(CHECK_CONNECTED)
 
-            self.connectedToStation = False
+        self.ip = AP_IP
 
-            print("> Connection to Access Point broken...")
-            self._startAp()
+        # IP address, netmask, gateway, DNS
+        self.ap_if.ifconfig(
+            (self.ip, "255.255.255.0", self.ip, self.ip)
+        )
 
-    def _startAp(self):
-        print("> Starting own Access Point: {}".format(self.publicName))
+        self.ap_if.config(essid=self.ap_essid, authmode=AUTH_OPEN)
+        print("> AP mode configured: {} ".format(self.ap_essid.decode("utf-8")), self.ap_if.ifconfig())
 
-        self.ap.active(True)
-        self.apStarted = True
-        self.ap.config(essid=self.publicName, authmode=AUTH_OPEN)
+    async def connect(self, autoLoop=False):
+        if not self.sta_if.isconnected() or not autoLoop:
+            if self.credentials.load().is_valid():
+                print("> Connecting to {:s}/{:s}".format(self.credentials.essid, self.credentials.password))
 
-    def _stopAp(self):
-        print("> Shutting down own Access Point")
+                self.sta_if.active(False)
+                self.sta_if.active(True)
 
-        self.apStarted = False
-        self.ap.active(False)
+                self.sta_if.connect(self.credentials.essid, self.credentials.password)
 
-    def getIp(self):
-        ip = self.ap.ifconfig()[0]
+                await sleep_ms(WAIT_FOR_CONNECT)
 
-        if self.station.isconnected():
-            ip = self.station.ifconfig()[0]
+                if not self.sta_if.isconnected():
+                    if autoLoop:
+                        await sleep_ms(WAIT_BEFORE_RECONNECT)
+                        self.loop.create_task(self.connect(True))
+            else:
+                print("> No valid credentials file: {}".format(FILE))
 
-        return ip
-
-    def connect(self, essid, password):
-        print("> Trying to connect to {}...".format(essid))
-        self.station.connect(essid, password)
-
-    def isConnectedToStation(self):
-        return self.connectedToStation
-
-    def setNetId(self, netId):
-        self.netId = netId
-        self.publicName = "{}-{}".format(self.essidAp, self.netId)
-
+    def set_ap_essid(self, ap_essid):
+        self.ap_essid = ap_essid

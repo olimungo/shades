@@ -19,6 +19,7 @@ class Clock:
     rgb = None
     hex = None
     tick_timer = Timer(-1)
+    play_spinner_timer = Timer(-1)
     effect_to_play = None
     effect_original = None
     stop_effect_init = None
@@ -27,16 +28,14 @@ class Clock:
 
     def __init__(self, color="0000ff"):
         self.leds_strip = NeoPixel(Pin(Gpio.DATA), LEDS)
+        self.clear_all()
 
         self.time = NtpTime()
 
-        self.clear_all()
-        self.set_color(color)
+        self.set_color(color, False)
 
     def clear_all(self):
-        for i in range(self.leds_strip.n):
-            self.leds_strip[i] = (0, 0, 0)
-
+        self.leds_strip.fill((0, 0, 0))
         self.leds_strip.write()
 
     def tick(self, timer=None):
@@ -146,16 +145,15 @@ class Clock:
         self.score_green = self.score_red = 0
         self.display_scoreboard()
 
-    def set_color(self, hex):
+    def set_color(self, hex, no_refresh=True):
         if isinstance(hex, bytes):
             hex = hex.decode('ascii')
 
         self.hex = hex
         self.rgb = colors.hex_to_rgb(hex)
 
-        print("hex: {} | rgb: {}".format(self.hex, self.rgb))
-
-        self.force_refresh()
+        if no_refresh:
+            self.force_refresh()
 
     def set_brighter(self):
         self.rgb = colors.brighter(self.rgb)
@@ -177,11 +175,11 @@ class Clock:
 
         self.clear_all()
 
-        timer = Timer(-1)
-        timer.init(period=period, mode=Timer.PERIODIC, callback=self.play_spinner_tick)
+        self.play_spinner_timer.init(period=period, mode=Timer.PERIODIC, callback=self.play_spinner_tick)
 
     def play_spinner_tick(self, timer):
         if self.stop_effect_init:
+        
             timer.deinit()
         else:
             if len(self.effect_to_play) == 0:

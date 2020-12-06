@@ -353,5 +353,11 @@ function emitCommand(command) {
             'mqtt-command',
             `{"topic": "commands/shades", "netIds": [${netIds}], "message": "${command}"}`
         );
+
+        // To be removed when legacy version of the code is not in use anymore
+        socket.emit(
+            'mqtt-command',
+            `{"topic": "shades/commands", "netIds": [${netIds}], "message": "${command}"}`
+        );
     }
 }
