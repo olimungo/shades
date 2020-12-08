@@ -24,19 +24,9 @@
             }
         },
         {
-            "label": "Build custom micropython v1.12",
-            "type": "shell",
-            "command": "cd micropython-build; docker build -f Dockerfile-12 -t micropython .; docker run -d --name=micropython micropython; docker cp micropython:/micropython/ports/esp8266/build-GENERIC/firmware-combined.bin ..; docker rm -f micropython; docker rmi -f micropython",
-            "group": "build",
-            "problemMatcher": [],
-            "presentation": {
-                "focus": true
-            }
-        },
-        {
             "label": "Build custom micropython v1.13",
             "type": "shell",
-            "command": "cd micropython-build; docker build -f Dockerfile-13 -t micropython .; docker run -d --name=micropython micropython; docker cp micropython:/micropython/ports/esp8266/build-GENERIC/firmware-combined.bin ..; docker rm -f micropython; docker rmi -f micropython",
+            "command": "cd micropython-build; docker build -f Dockerfile -t micropython .; docker run -d --name=micropython micropython; docker cp micropython:/micropython/ports/esp8266/build-GENERIC/firmware-combined.bin ..; docker rm -f micropython; docker rmi -f micropython",
             "group": "build",
             "problemMatcher": [],
             "presentation": {
@@ -57,16 +47,6 @@
             "label": "Erase ESP",
             "type": "shell",
             "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash",
-            "group": "build",
-            "problemMatcher": [],
-            "presentation": {
-                "focus": true
-            }
-        },
-        {
-            "label": "Erase and Flash ESP with micropython 1.12",
-            "type": "shell",
-            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 esp8266-20191220-v1.12.bin",
             "group": "build",
             "problemMatcher": [],
             "presentation": {

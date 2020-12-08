@@ -1,6 +1,6 @@
 # enqack/esp8266-micropython
-FROM phusion/baseimage:0.9.19 as micropython-base-12
-ARG VERSION=v1.12
+FROM phusion/baseimage:0.9.19 as micropython-base
+ARG VERSION=v1.13
 
 RUN apt-get update \
     && apt-get install -y \
