@@ -1,7 +1,6 @@
 from micropython import const
 import framebuf
 
-_NOOP = const(0)
 _DIGIT0 = const(1)
 _DECODEMODE = const(9)
 _INTENSITY = const(10)

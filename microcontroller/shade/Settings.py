@@ -2,6 +2,7 @@ from uos import remove
 
 FILE = "./settings.csv"
 
+
 class Settings:
     def __init__(self, net_id=b"0", group=b"", motor_reversed=b"0"):
         self.net_id = net_id
@@ -22,7 +23,7 @@ class Settings:
                 self.net_id, self.group, self.motor_reversed = contents
 
             if not self.is_valid():
-                remove()
+                self.remove()
         except OSError as e:
             # File not found
             if e.args[0] == 2:

@@ -5,7 +5,7 @@ import math
 import random
 
 
-class EffectsLibrary:
+class Effects:
     def __init__(self, board):
         self.board = board
         self.loop = asyncio.get_event_loop()
@@ -116,7 +116,7 @@ class EffectsLibrary:
 
         await asyncio.sleep(1)
 
-        for wait in range(5):
+        for _ in range(5):
             self.board.fill(0)
 
             self.byAngleRight()

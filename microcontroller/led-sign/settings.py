@@ -1,69 +1,48 @@
-settings = []
+from uos import remove
+
+FILE = "./settings.csv"
 
 
-def createSettings():
-    global settings
+class Settings:
+    def __init__(self, net_id=b"0", group=b""):
+        self.net_id = net_id
+        self.group = group
 
-    settingsString = "0,,0"
-    file = open("settings.txt", "w")
-    file.write(settingsString)
-    file.close
+    def write(self):
+        if self.is_valid():
+            with open(FILE, "wb") as f:
+                f.write(b",".join([self.net_id, self.group]))
 
-    settings = settingsString.split(",")
-
-
-def readSettings():
-    global settings
-
-    if len(settings) == 0:
+    def load(self):
         try:
-            file = open("settings.txt", "r")
-            settingsString = file.read()
-            file.close
+            with open(FILE, "rb") as f:
+                content = f.read().split(b",")
 
-            settings = settingsString.split(",")
-        except:
-            createSettings()
+            if len(content) == 2:
+                self.net_id, self.group = content
 
-    return settings
+            if not self.is_valid():
+                self.remove()
+        except OSError as e:
+            # File not found
+            if e.args[0] == 2:
+                self.write()
 
+        return self
 
-def writeSettings(netId, essid, group):
-    global settings
+    def remove(self):
+        try:
+            remove(FILE)
+        except OSError:
+            pass
 
-    file = open("settings.txt", "w")
-    settingsString = netId + "," + essid + "," + group
-    settings = settingsString.split(",")
+        self.net_id = self.group = None
 
-    file.write(settingsString)
-    file.close()
+    def is_valid(self):
+        # Ensure the credentials are entered as bytes
+        if not isinstance(self.net_id, bytes):
+            return False
+        if not isinstance(self.group, bytes):
+            return False
 
-
-def readEssid():
-    _, essid, _ = readSettings()
-    return essid
-
-
-def writeEssid(essid):
-    netId, _, group = readSettings()
-    writeSettings(netId, essid, group)
-
-
-def readNetId():
-    netId, _, _ = readSettings()
-    return netId
-
-
-def writeNetId(netId):
-    _, essid, group = readSettings()
-    writeSettings(netId, essid, group)
-
-
-def readGroup():
-    _, _, group = readSettings()
-    return group
-
-
-def writeGroup(group):
-    netId, essid, _ = readSettings()
-    writeSettings(netId, essid, group)
+        return True

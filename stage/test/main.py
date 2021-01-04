@@ -2,7 +2,8 @@ import time
 import machine, neopixel
 import random
 
-LEDS = 59
+LEDS = 2
+# LEDS = 59
 ledsStrip = None
 
 
@@ -122,10 +123,10 @@ def scrollNumber():
 setLedsStrip(LEDS)
 clearAll()
 # fillAll()
-setNumber(1, 255, 0, 0, 1)
-setNumber(2, 0, 255, 0, 2)
-setNumber(3, 0, 0, 255, 3)
-setNumber(4, 255, 255, 0, 4)
+# setNumber(1, 255, 0, 0, 1)
+# setNumber(2, 0, 255, 0, 2)
+# setNumber(3, 0, 0, 255, 3)
+# setNumber(4, 255, 255, 0, 4)
 
 #while True:
 #    demo(ledsStrip)
