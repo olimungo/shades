@@ -61,6 +61,8 @@ class Motor:
     def ir_check(self, timer):
         value = self.ir_sensor.read()
 
+        # print("IR SENSOR : {}".format(value))
+
         if value > Gpio().IR_SENSOR_THRESHOLD_HIGH:
             if self.motor_state == MotorState().RUNNING_UP:
                 self.shade_state = ShadeState().TOP

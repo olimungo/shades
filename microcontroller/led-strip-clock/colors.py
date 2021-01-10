@@ -101,7 +101,7 @@ def darker(rgb):
     h, s, l = rgb_to_hsl(rgb)
     l = round(l - 5) if l - 5 > 1 else 1
 
-    print("> Darker: {}".format((h, s, l)))
+    print("darker: {}".format((h, s, l)))
 
     return hsl_to_rgb((h, s, l))
 
@@ -109,6 +109,6 @@ def brighter(rgb):
     h, s, l = rgb_to_hsl(rgb)
     l = round(l + 5) if l + 5 < 99 else 99
 
-    print("> Brighter: {}".format((h, s, l)))
+    print("brighter: {}".format((h, s, l)))
 
     return hsl_to_rgb((h, s, l))

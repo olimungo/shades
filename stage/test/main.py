@@ -2,8 +2,7 @@ import time
 import machine, neopixel
 import random
 
-LEDS = 2
-# LEDS = 59
+LEDS = 59
 ledsStrip = None
 
 
@@ -11,19 +10,24 @@ def set(n, b, g, r):
     ledsStrip[n] = (b, g, r)
     ledsStrip.write()
 
+
 def clear(n):
-        set(n, 0, 0, 0)
+    set(n, 0, 0, 0)
+
 
 def fill(n):
-        set(n, 255, 255, 255)
+    set(n, 255, 255, 255)
+
 
 def clearAll():
     for i in range(ledsStrip.n):
         clear(i)
 
+
 def fillAll():
     for i in range(ledsStrip.n):
         fill(i)
+
 
 def demo():
     n = ledsStrip.n
@@ -38,22 +42,24 @@ def demo():
 
         time.sleep_ms(20)
 
-    for i in range(n-1, -1, -1):
+    for i in range(n - 1, -1, -1):
         ledsStrip[i] = (0, 0, 0)
 
         ledsStrip.write()
 
         time.sleep_ms(20)
 
+
 def setLedsStrip(ledsCount):
     global ledsStrip
     ledsStrip = neopixel.NeoPixel(machine.Pin(4), ledsCount)
+
 
 def setNumber(position, r, g, b, number):
     digits = [1, 15, 31, 45]
     start = digits[position - 1]
 
-    for i in range (start, start + 7 * 2):
+    for i in range(start, start + 7 * 2):
         ledsStrip[i] = (0, 0, 0)
 
     if number == 0:
@@ -82,6 +88,7 @@ def setNumber(position, r, g, b, number):
 
     ledsStrip.write()
 
+
 def setSeconds():
     dots = 29
 
@@ -92,6 +99,7 @@ def setSeconds():
 
     ledsStrip[dots] = (value, value, value)
     ledsStrip[dots + 1] = (value, value, value)
+
 
 def scrollNumber():
     for number in range(10):
@@ -122,11 +130,11 @@ def scrollNumber():
 
 setLedsStrip(LEDS)
 clearAll()
-# fillAll()
+fillAll()
 # setNumber(1, 255, 0, 0, 1)
 # setNumber(2, 0, 255, 0, 2)
 # setNumber(3, 0, 0, 255, 3)
 # setNumber(4, 255, 255, 0, 4)
 
-#while True:
+# while True:
 #    demo(ledsStrip)
