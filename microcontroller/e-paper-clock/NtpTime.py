@@ -21,6 +21,9 @@ class NtpTime:
         while not self.sta_if.isconnected():
             await sleep(2)
 
+        # Wait for 2 more seconds so to let other services start
+        await sleep(2)
+
         self.loop.create_task(self.get_offset())
         self.loop.create_task(self.update_time())
 
@@ -41,10 +44,12 @@ class NtpTime:
                     if offset[:1] == "-":
                         self.offset_hour = -self.offset_hour
 
+                    print("> Timezone offset: {}h{}m".format(self.offset_hour, self.offset_minute))
+
                     # Wait an hour before updating again
                     await sleep(3600)
                 except Exception as e:
-                    print("> NtpTime.get_offset error: {}".format(e))
+                    print("> NtpTime.get_offset error: {} / worldtime: {}".format(e, worldtime))
                     await sleep(15)
 
     async def update_time(self):

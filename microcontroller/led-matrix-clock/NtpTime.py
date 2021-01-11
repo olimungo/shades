@@ -27,9 +27,7 @@ class NtpTime:
         while True:
             if self._wifiManager.isConnectedToStation():
                 try:
-                    offset = get("http://worldtimeapi.org/api/ip").json()[
-                        "utc_offset"
-                    ]
+                    offset = get("http://worldtimeapi.org/api/ip").json()["utc_offset"]
 
                     self._offset_hour = int(offset[1:3])
                     self._offset_minute = int(offset[4:6])
