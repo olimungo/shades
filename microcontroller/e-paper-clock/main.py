@@ -4,53 +4,88 @@ from machine import reset
 from time import sleep
 from network import WLAN, STA_IF
 
-from WifiManager import WifiManager
-from HttpServer import HttpServer
-from mDnsServer import mDnsServer
-from Settings import Settings
-from Credentials import Credentials
-from NtpTime import NtpTime
-from Display import Display, COL_DIGITS
+# from WifiManager import WifiManager
+# from HttpServer import HttpServer
+# from mDnsServer import mDnsServer
+# from Settings import Settings
+# from Credentials import Credentials
+# from NtpTime import NtpTime
+# from Display import Display, COL_DIGITS
 
 PUBLIC_NAME = b"Clock"
 
 
+import epaper2in9
+from machine import SPI, Pin
+
+WIDTH = const(128)
+HEIGHT = const(296)
+CUBE_SIZE = const(12)
+CUBE_BORDER = const(2)
+COL_DIGITS = [1, 6, 13, 18]
+COL_BAR = const(23)
+COL_DOTS = const(11)
+ROW_DOTS = [3, 5]
+WHITE = const(1)
+BLACK = const(0)
+CS_PIN = const(15)
+DC_PIN = const(16)
+RST_PIN = const(4)
+BUSY_PIN = const(5)
+
+
 class Main:
     def __init__(self):
-        self.sta_if = WLAN(STA_IF)
-        self.settings = Settings().load()
-        self.credentials = Credentials().load()
+        # self.sta_if = WLAN(STA_IF)
+        # self.settings = Settings().load()
+        # self.credentials = Credentials().load()
 
-        self.wifi = WifiManager(b"%s-%s" % (PUBLIC_NAME, self.settings.net_id))
-        self.mdns = mDnsServer(PUBLIC_NAME.lower(), self.settings.net_id)
+        # self.wifi = WifiManager(b"%s-%s" % (PUBLIC_NAME, self.settings.net_id))
+        # self.mdns = mDnsServer(PUBLIC_NAME.lower(), self.settings.net_id)
 
-        routes = {
-            b"/": b"./index.html",
-            b"/index.html": b"./index.html",
-            b"/scripts.js": b"./scripts.js",
-            b"/style.css": b"./style.css",
-            b"/favicon.ico": self.favicon,
-            b"/connect": self.connect,
-            b"/settings/values": self.settings_values,
-            b"/settings/net": self.settings_net,
-            b"/settings/group": self.settings_group,
-        }
+        # routes = {
+        #     b"/": b"./index.html",
+        #     b"/index.html": b"./index.html",
+        #     b"/scripts.js": b"./scripts.js",
+        #     b"/style.css": b"./style.css",
+        #     b"/favicon.ico": self.favicon,
+        #     b"/connect": self.connect,
+        #     b"/settings/values": self.settings_values,
+        #     b"/settings/net": self.settings_net,
+        #     b"/settings/group": self.settings_group,
+        # }
 
-        self.http = HttpServer(routes)
-        print("> HTTP server up and running")
+        # self.http = HttpServer(routes)
+        # print("> HTTP server up and running")
 
-        self.display = Display()
-        self.ntp = NtpTime()
+        # self.display = Display()
+        # self.ntp = NtpTime()
 
-        self.previous_hour1 = self.previous_hour2 = -1
-        self.previous_minute1 = self.previous_minute2 = -1
-        self.previous_second2 = self.previous_count = -1
+        # self.previous_hour1 = self.previous_hour2 = -1
+        # self.previous_minute1 = self.previous_minute2 = -1
+        # self.previous_second2 = self.previous_count = -1
 
-        self.loop = get_event_loop()
-        self.loop.create_task(self.check_wifi())
-        self.loop.create_task(self.update_time())
-        self.loop.run_forever()
-        self.loop.close()
+        # self.loop = get_event_loop()
+        # self.loop.create_task(self.check_wifi())
+        # self.loop.create_task(self.update_time())
+        # self.loop.run_forever()
+        # self.loop.close()
+
+        spi = SPI(1, baudrate=80000000, polarity=0, phase=0)
+
+        self.cs = Pin(CS_PIN)
+        self.dc = Pin(DC_PIN)
+        self.rst = Pin(RST_PIN, Pin.OUT)
+        self.busy = Pin(BUSY_PIN, Pin.OUT)
+
+        self.epd = epaper2in9.EPD(spi, self.cs, self.dc, self.rst, self.busy)
+        self.epd.init()
+
+        from images import no_wifi
+
+        self.epd.clear_frame_memory(b"\xFF")
+        self.epd.set_frame_memory(no_wifi, 48, 70, 32, 152)
+        self.epd.display_frame()
 
     async def check_wifi(self):
         while True:
@@ -106,8 +141,8 @@ class Main:
             self.settings.write()
 
     async def update_time(self):
-        self.display.set_eco_mode(True)
-        
+        # self.display.set_eco_mode(True)
+
         while True:
             hour1, hour2, minute1, minute2, second1, second2 = self.ntp.get_time()
             seconds = second1 * 10 + second2
@@ -139,7 +174,7 @@ class Main:
             self.previous_second2 = second2
             self.previous_count = count
 
-            await sleep_ms(400)
+            await sleep_ms(100)
 
 
 try:

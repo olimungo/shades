@@ -156,8 +156,12 @@ class Display:
         return False
 
     def update(self):
+        self.epd.reset()
+
         self.epd.set_frame_memory(self.buf, 0, 0, WIDTH, HEIGHT)
         self.epd.display_frame()
+
+        self.epd.sleep()
 
     def set_eco_mode(self, value):
         self.eco_mode = bool(value)

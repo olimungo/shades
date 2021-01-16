@@ -1,5 +1,6 @@
 from math import fabs
 
+
 def rgb_to_hsl(rgb):
     # Make r, g, and b fractions of 1
     r = rgb[0] / 255
@@ -39,15 +40,16 @@ def rgb_to_hsl(rgb):
 
     # Calculate saturation
     if delta == 0:
-        s= 0
-    else :
+        s = 0
+    else:
         s = delta / (1 - fabs(2 * l - 1))
 
     # Multiply l and s by 100
     s = round(+(s * 100), 2)
     l = round(+(l * 100), 2)
 
-    return (h, s , l)
+    return (h, s, l)
+
 
 def hsl_to_rgb(hsl):
     # Must be fractions of 1
@@ -67,7 +69,9 @@ def hsl_to_rgb(hsl):
         g = x
         b = 0
     elif 60 <= h and h < 120:
-        r = x; g = c; b = 0
+        r = x
+        g = c
+        b = 0
     elif 120 <= h and h < 180:
         r = 0
         g = c
@@ -91,23 +95,66 @@ def hsl_to_rgb(hsl):
 
     return (r, g, b)
 
+
 def hex_to_rgb(hex):
-    return tuple(int(hex[i:i+2], 16) for i in (0, 2, 4))
+    return tuple(int(hex[i : i + 2], 16) for i in (0, 2, 4))
+
 
 def rgb_to_hex(rgb):
-    return '%02x%02x%02x' % rgb
+    return "%02x%02x%02x" % rgb
+
 
 def darker(rgb):
     h, s, l = rgb_to_hsl(rgb)
-    l = round(l - 5) if l - 5 > 1 else 1
+    l = round(l)
+
+    print("000 : {}".format(l))
+
+    if l > 40:
+        print("111")
+        if l - 2 < 40:
+            l = 40
+        else:
+            l -= 2
+    elif l > 16:
+        print("222")
+        if l - 8 < 16:
+            l = 16
+        else:
+            l -= 8
+    else:
+        print("333")
+        if l - 2 < 2:
+            l = 2
+        else:
+            l -= 2
 
     print("darker: {}".format((h, s, l)))
 
     return hsl_to_rgb((h, s, l))
 
+
 def brighter(rgb):
     h, s, l = rgb_to_hsl(rgb)
-    l = round(l + 5) if l + 5 < 99 else 99
+    l = round(l)
+
+    print("000 : {}".format(l))
+
+    if l < 16:
+        if l + 2 > 16:
+            l = 16
+        else:
+            l += 2
+    elif l < 40:
+        if l + 8 > 40:
+            l = 40
+        else:
+            l += 8
+    else:
+        if l + 2 > 98:
+            l = 98
+        else:
+            l += 2
 
     print("brighter: {}".format((h, s, l)))
 
