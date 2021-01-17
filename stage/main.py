@@ -7,9 +7,9 @@ print("<<< RESET CAUSE: {}".format(reset_cause()))
 pin = Pin(2, Pin.OUT)
 pin.off()
 
-sleep(10)
+sleep(2)
 
-deepsleep(2000)
+deepsleep(10000)
 
 
 

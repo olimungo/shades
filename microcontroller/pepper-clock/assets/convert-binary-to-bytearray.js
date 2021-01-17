@@ -2,10 +2,15 @@
 // Make sure that each line of binary data is a multiple of 8 :
 //    add "1" or "0" by replacing the regular expression "$" (end of line)
 //    by "1"s or "0"s (as many as needed)
+//
+// Options:
+//    - ORIGINAL SIZE
+//    - 50% GRAY
+//    - BLACK = 0, WHITE = 1
 
 fs = require('fs');
 
-const stream = fs.createReadStream("no-wifi.binary", {
+const stream = fs.createReadStream("pepper-clock.binary", {
     encoding: 'utf8',
     fd: null
 });
@@ -30,6 +35,6 @@ stream.on('readable', function () {
     }
 
     if (hexas.length > 0) {
-        console.log(`no_wifi = bytearray(b\"${hexas.join('')}\")`);
+        console.log(`pepper_clock_icon = bytearray(b\"${hexas.join('')}\")`);
     }
 });
