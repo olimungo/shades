@@ -1,74 +1,57 @@
 from urequests import get
 from machine import RTC
 from ntptime import settime
-from uasyncio import get_event_loop, sleep
-from network import WLAN, STA_IF
+from Settings import Settings
 
 
 class NtpTime:
-    offset_hour = 0
-    offset_minute = 0
-
     def __init__(self):
-        self.sta_if = WLAN(STA_IF)
+        self.settings = Settings().load()
 
-        self.loop = get_event_loop()
-        self.loop.create_task(self.wait_for_station())
+    def get_offset(self):
+        try:
+            worldtime = get("http://worldtimeapi.org/api/ip")
+            # worldtime = get("https://timezoneapi.io/api/ip/?token=aWrIAGYXyzAbKptqjmKU")
 
-    async def wait_for_station(self):
-        await sleep(5)
+            worldtime_json = worldtime.json()
+            offset = worldtime_json["utc_offset"]
+            # offset = worldtime_json["data"]["datetime"]["offset_gmt"]
 
-        while not self.sta_if.isconnected():
-            await sleep(2)
+            offset_hour = int(offset[1:3])
+            offset_minute = int(offset[4:6])
 
-        # Wait for 2 more seconds so to let other services start
-        await sleep(2)
+            if offset[:1] == "-":
+                offset_hour = -offset_hour
 
-        self.loop.create_task(self.get_offset())
-        self.loop.create_task(self.update_time())
+            self.settings.offset_hour = b"%s" % offset_hour
+            self.settings.offset_minute = b"%s" % offset_minute
+            self.settings.write()
 
-    async def get_offset(self):
-        while True:
-            while not self.sta_if.isconnected():
-                await sleep(1)
+            print(
+                "> Timezone offset: {}h{}m".format(offset_hour, offset_minute)
+            )
 
-            while self.sta_if.isconnected():
-                try:
-                    worldtime = get("http://worldtimeapi.org/api/ip")
-                    worldtime_json = worldtime.json()
-                    offset = worldtime_json["utc_offset"]
+            return True
+        except Exception as e:
+            print("> NtpTime.get_offset error: {}".format(e))
 
-                    self.offset_hour = int(offset[1:3])
-                    self.offset_minute = int(offset[4:6])
+            return False
 
-                    if offset[:1] == "-":
-                        self.offset_hour = -self.offset_hour
+    def update_time(self):
+        try:
+            settime()
+            print("> NTP time updated at {}".format(RTC().datetime()))
 
-                    print("> Timezone offset: {}h{}m".format(self.offset_hour, self.offset_minute))
-
-                    # Wait an hour before updating again
-                    await sleep(3600)
-                except Exception as e:
-                    print("> NtpTime.get_offset error: {} / worldtime: {}".format(e, worldtime))
-                    await sleep(15)
-
-    async def update_time(self):
-        while True:
-            try:
-                settime()
-                print("> NTP time updated at {}".format(RTC().datetime()))
-
-                # Wait 5 minutes before updating again
-                await sleep(300)
-            except Exception as e:
-                print("> NtpTime.update_time error: {}".format(e))
-                await sleep(15)
+            return True
+        except Exception as e:
+            print("> NtpTime.update_time error: {}".format(e))
+            return False
 
     def get_time(self):
         _, _, _, _, hour, minute, second, _ = RTC().datetime()
 
-        hour += self.offset_hour
-        minute += self.offset_minute
+        hour += int(self.settings.offset_hour.decode("ascii"))
+        minute += int(self.settings.offset_minute.decode("ascii"))
 
         if minute > 60:
             hour += 1

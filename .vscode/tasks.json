@@ -34,6 +34,26 @@
             }
         },
         {
+            "label": "Build custom micropython v1.13 for Pepper-clock",
+            "type": "shell",
+            "command": "cd microcontroller/pepper-clock/docker; docker build -f Dockerfile -t micropython .; docker run -d --name=micropython micropython; docker cp micropython:/micropython/ports/esp8266/build-GENERIC/firmware-combined.bin .; docker rm -f micropython; docker rmi -f micropython",
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": true
+            }
+        },
+        {
+            "label": "Erase and flash ESP with Pepper-clock micropython",
+            "type": "shell",
+            "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 microcontroller/pepper-clock/docker/firmware-combined.bin",
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "focus": true
+            }
+        },
+        {
             "label": "Erase and flash ESP with custom micropython",
             "type": "shell",
             "command": "pkill -f mpfshell; esptool.py --port /dev/tty.usbserial-1460 erase_flash; esptool.py --port /dev/tty.usbserial-1460 --baud 460800 write_flash --flash_size=detect 0 firmware-combined.bin",

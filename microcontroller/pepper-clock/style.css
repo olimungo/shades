@@ -77,36 +77,8 @@ button:active {
     font-size: 5rem;
 }
 
-.tag {
-    font-size: 2.5rem;
-    font-weight: 400;
-    width: 3.5rem;
-    height: 3.5rem;
-    background-color: #e9f7ff;
-    color: #222;
-    border-radius: 50%;
-    margin-left: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.ip {
-    font-size: 2rem;
-    margin: 1rem;
-}
-
 .svg {
     width: 7rem;
-}
-
-.svg-clog {
-    width: 6rem;
-}
-
-.svg-back {
-    width: 4rem;
-    margin-right: 1rem;
 }
 
 .settings {
@@ -152,7 +124,6 @@ button:active {
     margin-bottom: 16rem;
 }
 
-input[type='number'],
 input[type='password'],
 input[type='text'] {
     border: solid 1px #e9f7ff;
@@ -164,10 +135,6 @@ input[type='text'] {
     font-weight: 300;
     color: #e9f7ff;
     padding-left: 1rem;
-}
-
-input[type='number'] {
-    width: 9rem;
 }
 
 input[type='password'],
@@ -184,11 +151,11 @@ input.switch {
     background-color: #e9f7ff;
     border: 1px solid #e9f7ff;
     border-radius: 5rem;
-    box-shadow: inset -6rem 0 0 0 #222;
+    box-shadow: inset -6rem 0 0 0 rgb(50, 76, 221);
 }
 
 input.switch:checked {
-    box-shadow: inset 6rem 0 0 0 #222;
+    box-shadow: inset 6rem 0 0 0 rgb(18, 199, 33);
 }
 
 .connect-button {
@@ -199,7 +166,18 @@ input.switch:checked {
     background-color: #e9f7ff;
 }
 
-.connection {
+.shutdown-button {
+    width: 41rem;
+    font-size: 3rem;
+    height: 6rem;
+    color: #eee;
+    background-color: #324cdd;
+    border-color: #546ae1;
+}
+
+.connection,
+.connection-success,
+.ap-shutdown {
     padding: 2em 1em;
     font-size: 3.2rem;
 }
@@ -207,16 +185,6 @@ input.switch:checked {
 .connection-details {
     padding: 2em 3em;
     font-size: 2.5rem;
-}
-
-.footer {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: #333;
-    color: white;
-    text-align: center;
 }
 
 .spinner {
@@ -244,15 +212,6 @@ input.switch:checked {
 .spinner .bounce2 {
     -webkit-animation-delay: -0.16s;
     animation-delay: -0.16s;
-}
-
-.new-ip {
-    font-size: 3em;
-    font-weight: 600;
-    padding: 0.1em 0.4em;
-    background: #ddd;
-    color: #222;
-    border-radius: 5px;
 }
 
 @-webkit-keyframes sk-bouncedelay {

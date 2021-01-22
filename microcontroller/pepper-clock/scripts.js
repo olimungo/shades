@@ -2,15 +2,30 @@ window.addEventListener('DOMContentLoaded', (event) => {
     fetch('/settings/values')
         .then(response => response.json())
         .then(response => {
-            setTagValue('ip', response.ip);
-            setTagValue('net-id', response.netId);
-            setTagValue('tag-net-id', response.netId);
-            setTagValue('group', response.group);
+            setTagValue('eco-mode', response.ecoMode);
             setTagValue('essid', response.essid);
-
-            document.title = `Clock ${response.netId}`; 
+            setModeCheckbox();
         });
 });
+
+function setMode() {
+    const tag = document.getElementById('eco-mode');
+    value = tag.checked ? 1 : 0;
+
+    setModeCheckbox()
+    fetch(`/settings/set-eco-mode?val=${value}`).then();
+}
+
+function setModeCheckbox() {
+    const tagLabel = document.getElementById('mode-label');
+    const tag = document.getElementById('eco-mode');
+
+    if (tag.checked) {
+        tagLabel.textContent = "Eco mode";
+    } else {
+        tagLabel.textContent = "Animated mode";
+    }
+}
 
 function setTagValue(tagId, value) {
     const tag = document.getElementById(tagId);
@@ -29,87 +44,72 @@ function debounce(fn, wait = 100) {
     };
 }
 
-function setNetId(value) {
-    fetch(`/settings/net?id=${value}`).then();
-    const tag = document.getElementById('tag-net-id');
-    tag.textContent = value;
-    document.title = `Sign ${value}`;
-}
-
-const debouncedSetNetId = debounce(setNetId, 500);
-
-function setGroup(value) {
-    fetch(`/settings/group?name=${value}`).then();
-}
-
-const debouncedSetGroup = debounce(setGroup, 500);
-
-function displayMain() {
-    const main = document.getElementById('main'),
-        settings = document.getElementById('settings');
-
-    main.classList.remove('hidden');
-    settings.classList.add('hidden');
-}
-
-function displaySettings() {
-    const main = document.getElementById('main'),
-        settings = document.getElementById('settings');
-
-    main.classList.add('hidden');
-    settings.classList.remove('hidden');
-}
-
 async function fetchWithTimeout(resource, options) {
     const { timeout = 8000 } = options;
-    
+
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
-  
+
     const response = await fetch(resource, {
-      ...options,
-      signal: controller.signal  
+        ...options,
+        signal: controller.signal
     });
     clearTimeout(id);
-  
+
     return response;
 }
 
 function checkConnection() {
     try {
-        return fetchWithTimeout('/settings/values', {
-          timeout: 3000
+        return fetchWithTimeout('/settings/connected', {
+            timeout: 3000
         })
-        .then(response => response.json())
-        .then(response => {
-            if (response.ip != '192.168.4.1') {
-                setTagValue('new-ip', response.ip);
+            .then(response => response.json())
+            .then(response => {
+                if (response.connected == '1') {
+                    const connection = document.getElementById('connection'),
+                        connectionSuccess = document.getElementById('connection-success');
 
-                const spinner = document.getElementById('spinner'),
-                    newIp = document.getElementById('new-ip');
-
-                spinner.classList.add('hidden');
-                newIp.classList.remove('hidden');
-            }
-            else {
-                setTimeout(checkConnection, 3000);
-            }
-        });
-      } catch (error) {
+                    connection.classList.add('hidden');
+                    connectionSuccess.classList.remove('hidden');
+                }
+                else {
+                    setTimeout(checkConnection, 3000);
+                }
+            });
+    } catch (error) {
         setTimeout(checkConnection, 3000);
-      }
+    }
 }
 
 function connect() {
     const essid = document.getElementById('essid'),
         pwd = document.getElementById('pwd'),
-        settings = document.getElementById('settings'),
+        main = document.getElementById('main'),
         connection = document.getElementById('connection');
+
+    main.classList.add('hidden');
+    connection.classList.remove('hidden');
 
     fetch(`/connect?essid=${essid.value}&password=${pwd.value}`).then();
 
-    settings.classList.add('hidden');
-    connection.classList.remove('hidden');
-
     setTimeout(checkConnection, 3000);
+}
+
+function showMain() {
+    const main = document.getElementById('main'),
+        connectionSuccess = document.getElementById('connection-success');
+
+    connectionSuccess.classList.add('hidden');
+    main.classList.remove('hidden');
+}
+
+function shutdownAp() {
+    fetch(`/settings/shutdown-ap`).then();
+
+    const main = document.getElementById('main'),
+        apShutdown = document.getElementById('ap-shutdown');
+
+    main.classList.add('hidden');
+    apShutdown.classList.remove('hidden');
 }

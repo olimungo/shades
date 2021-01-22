@@ -6,7 +6,7 @@ from gc import collect
 
 MAX_PACKET_SIZE = const(1024)
 HTTP_PORT = const(80)
-IDLE_TIME_BETWEEN_CHECKS = const(25)
+IDLE_TIME_BETWEEN_CHECKS = const(30)
 
 HEADER_OK = b"HTTP/1.1 200 OK\r\n\r\n"
 HEADER_REDIRECT = b"HTTP/1.1 302 Found\r\nLocation: index.html\r\n\r\n"
@@ -21,7 +21,7 @@ class HttpServer:
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.sock.bind(("", HTTP_PORT))
-        self.sock.listen(5)
+        self.sock.listen(3)
         
         self.poller = poll()
         self.poller.register(self.sock, POLLIN)
@@ -134,7 +134,7 @@ class HttpServer:
                         elif callable(route):
                             self.call_route(client, route, params)
                         else:
-                            self.redirect(client)
+                            self.no_content(client)
             except Exception as e:
                 print("> HttpServer.check_request exception: {}".format(e))
 

@@ -15,7 +15,7 @@ class NetworkManager:
         self.ap_if = WLAN(AP_IF)
 
         self.sta_if.active(False)
-        self.sta_if.active(False)
+        self.ap_if.active(False)
 
         self.credentials = Credentials()
 
@@ -34,3 +34,10 @@ class NetworkManager:
             "> AP mode configured: {} ".format(PUBLIC_NAME.decode("utf-8")),
             self.ap_if.ifconfig(),
         )
+
+    def connect(self, essid, password):
+        self.sta_if.active(True)
+        self.sta_if.connect(essid, password)
+
+    def isconnected(self):
+        return self.sta_if.isconnected()

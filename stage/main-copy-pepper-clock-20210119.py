@@ -1,3 +1,4 @@
+from uasyncio import get_event_loop, sleep_ms
 from time import sleep
 from gc import collect, mem_free
 from machine import (
@@ -13,12 +14,22 @@ from time import sleep
 
 from Settings import Settings
 from Credentials import Credentials
-
+from Display import Display, COL_DIGITS
+from NetworkManager import NetworkManager
 
 class Main:
     def __init__(self):
         self.settings = Settings()
         self.credentials = Credentials()
+        self.display = Display()
+        self.networkManager = NetworkManager()
+
+        self.previous_hour1 = self.previous_hour2 = -1
+        self.previous_minute1 = self.previous_minute2 = -1
+        self.previous_second2 = self.previous_count = -1
+
+        self.loop = get_event_loop()
+
         rst_cause = reset_cause()
 
         if rst_cause in [PWRON_RESET, SOFT_RESET]:
@@ -30,60 +41,18 @@ class Main:
         else:
             self.other_reset_wkfl()
 
+        self.loop.run_forever()
+        self.loop.close()
+
     # Power on
     def power_on_reset_wkfl(self):
         print("> SOFT reset or POWER ON reset")
-
-        from Display import Display
-
-        self.display = Display()
         self.display_logo()
 
+        sleep(1)
+
         self.check_credentials()
-
-        from NetworkManager import NetworkManager
-
-        self.networkManager = NetworkManager()
-        self.networkManager.connect(self.credentials.essid, self.credentials.password)
-
-        while not self.networkManager.isconnected():
-            sleep(1)
-
-        from NtpTime import NtpTime
-
-        self.ntp = NtpTime()
-
-        while not self.ntp.update_time():
-            sleep(1)
-
-        while not self.ntp.get_offset():
-            sleep(1)
-
-        hour1, hour2, minute1, minute2, _, _ = self.ntp.get_time()
-        self.update_time_eco(hour1, hour2, minute1, minute2)
-
-        # Update display takes a few secs, requery for current time in order to compute deepsleep duration
-        _, _, _, _, second1, second2 = self.ntp.get_time()
-        seconds = second1 * 10 + second2
-        print("> Seconds to wake-up: {}".format(60 - 10 - seconds))
-        deepsleep((60 - 10 - seconds) * 1000)
-
-    # Reset from deep sleep after time-out or reset button pressed when IN deep sleep
-    def deepsleep_reset_wkfl(self):
-        print("> DEEPSLEEP reset")
-        self.check_credentials()
-
-        from Display import Display
-
-        self.display = Display(False)
-        # self.display_logo()
-        # self.display.set_eco_mode(True)
-
-        from NtpTime import NtpTime
-
-        self.ntp = NtpTime()
-
-        self.update_time()
+        self.loop.create_task(self.update_time_animated())
 
     # Reset button pressed when NOT in deep sleep
     def hard_reset_wkfl(self):
@@ -92,13 +61,21 @@ class Main:
         self.networkManager.start_access_point()
         self.start_http_server()
 
+    # Reset from deep sleep after time-out or reset button pressed when IN deep sleep
+    def deepsleep_reset_wkfl(self):
+        print("> DEEPSLEEP reset")
+        self.check_credentials()
+
+        from NtpTime import NtpTime
+        ntp = NtpTime()
+
+        hour1, hour2, minute1, minute2, second1, second2 = ntp.get_time()
+
     def other_reset_wkfl(self):
         from machine import reset
-
         reset()
 
     def display_logo(self):
-        pass
         from images import pepper_clock_icon, pepper_clock_icon_size
 
         self.display.display_image(
@@ -106,7 +83,6 @@ class Main:
         )
 
     def display_no_wifi_icon(self):
-        pass
         from images import no_wifi_icon, no_wifi_icon_size
 
         self.display.display_image(
@@ -114,7 +90,6 @@ class Main:
         )
 
     def display_access_point_icon(self):
-        pass
         from images import access_point_icon, access_point_icon_size
 
         self.display.display_image(
@@ -128,33 +103,6 @@ class Main:
         self.display_no_wifi_icon()
         print("> Going to deep sleep...")
         deepsleep()
-
-    def update_time(self):
-        _, _, _, _, second1, second2 = self.ntp.get_time()
-        seconds = second1 * 10 + second2
-
-        print("> Seconds at wake-up: {}".format(seconds))
-
-        if 60 - seconds > 10:
-            deepsleep((60 - 10 - seconds) * 1000)
-
-        if seconds != 0:
-            sleep(60 - seconds)
-
-        hour1, hour2, minute1, minute2, second1, second2 = self.ntp.get_time()
-
-        self.update_time_eco(hour1, hour2, minute1, minute2)
-        print(
-            "{}{} : {}{} : {}{}".format(
-                hour1, hour2, minute1, minute2, second1, second2
-            )
-        )
-
-        # Update display takes a few secs, requery for current time in order to compute deepsleep duration
-        _, _, _, _, second1, second2 = self.ntp.get_time()
-        seconds = second1 * 10 + second2
-        print("> Seconds to wake-up: {}".format(60 - 10 - seconds))
-        deepsleep((60 - 10 - seconds) * 1000)
 
     def start_http_server(self):
         from HttpServer import HttpServer
@@ -215,19 +163,91 @@ class Main:
 
         return b'{"connected": "%s"}' % (isconnected)
 
-    def update_time_eco(self, hour1, hour2, minute1, minute2):
-        from Display import COL_DIGITS
+    def update_time_eco(self):
+        self.display.set_eco_mode(True)
 
-        self.display.fill_white()
+        hour1, hour2, minute1, minute2, second1, second2 = self.ntp.get_time()
 
-        updated = self.display.draw_digit(COL_DIGITS[0], hour1, 0)
-        updated = self.display.draw_digit(COL_DIGITS[1], hour2, 0) or updated
-        updated = self.display.draw_digit(COL_DIGITS[2], minute1, 0) or updated
-        updated = self.display.draw_digit(COL_DIGITS[3], minute2, 0) or updated
-        updated = self.display.draw_dots(0, 0) or updated
+        updated = self.display.draw_digit(COL_DIGITS[0], hour1, self.previous_hour1)
+        updated = (
+            self.display.draw_digit(COL_DIGITS[1], hour2, self.previous_hour2)
+            or updated
+        )
+        updated = (
+            self.display.draw_digit(COL_DIGITS[2], minute1, self.previous_minute1)
+            or updated
+        )
+        updated = (
+            self.display.draw_digit(COL_DIGITS[3], minute2, self.previous_minute2)
+            or updated
+        )
+        updated = self.display.draw_dots(second2, self.previous_second2) or updated
 
         if updated:
             self.display.update()
+
+        self.previous_hour1 = hour1
+        self.previous_hour2 = hour2
+        self.previous_minute1 = minute1
+        self.previous_minute2 = minute2
+        self.previous_second2 = second2
+
+    async def get_offset(self):
+        if not self.networkManager.isconnected():
+            self.networkManager.connect(self.credentials.essid, self.credentials.password)
+            
+        while not self.ntp.get_offset():
+            await sleep_ms(10000)
+
+    async def update_time(self):
+        if not self.networkManager.isconnected():
+            self.networkManager.connect(self.credentials.essid, self.credentials.password)
+            
+        while not self.ntp.update_time():
+            await sleep_ms(10000)
+
+    async def update_time_animated(self):
+        from NtpTime import NtpTime
+        self.ntp = NtpTime()
+
+        self.loop.create_task(self.get_offset())
+        self.loop.create_task(self.update_time())
+
+        self.display.fill_white()
+
+        while True:
+            hour1, hour2, minute1, minute2, second1, second2 = self.ntp.get_time()
+            seconds = second1 * 10 + second2
+            count = int(seconds / (60 / 9))  # 9 states = 8 lights + no light
+            updated = False
+
+            updated = self.display.draw_digit(COL_DIGITS[0], hour1, self.previous_hour1)
+            updated = (
+                self.display.draw_digit(COL_DIGITS[1], hour2, self.previous_hour2)
+                or updated
+            )
+            updated = (
+                self.display.draw_digit(COL_DIGITS[2], minute1, self.previous_minute1)
+                or updated
+            )
+            updated = (
+                self.display.draw_digit(COL_DIGITS[3], minute2, self.previous_minute2)
+                or updated
+            )
+            updated = self.display.draw_dots(second2, self.previous_second2) or updated
+            updated = self.display.draw_bar(count, self.previous_count) or updated
+
+            if updated:
+                self.display.update()
+
+            self.previous_hour1 = hour1
+            self.previous_hour2 = hour2
+            self.previous_minute1 = minute1
+            self.previous_minute2 = minute2
+            self.previous_second2 = second2
+            self.previous_count = count
+
+            await sleep_ms(100)
 
 
 try:

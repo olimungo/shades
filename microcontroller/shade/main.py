@@ -11,6 +11,7 @@ from MqttManager import MqttManager
 from Motor import Motor
 from Settings import Settings
 from Credentials import Credentials
+from UdpServer import UdpServer
 
 PUBLIC_NAME = b"Shade"
 BROKER_NAME = b"nestor.local"
@@ -21,6 +22,7 @@ class Main:
         self.sta_if = WLAN(STA_IF)
         self.settings = Settings().load()
         self.credentials = Credentials().load()
+        self.udps = UdpServer()
 
         self.wifi = WifiManager(b"%s-%s" % (PUBLIC_NAME, self.settings.net_id))
         self.mdns = mDnsServer(PUBLIC_NAME.lower(), self.settings.net_id)

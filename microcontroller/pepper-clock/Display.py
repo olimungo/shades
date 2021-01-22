@@ -39,8 +39,8 @@ BUSY_PIN = const(5)  # D1 - Purple
 
 
 class Display:
-    def __init__(self):
-        self.set_eco_mode(False)
+    def __init__(self, init_display=True):
+        self.set_eco_mode(True)
 
         self.buf = bytearray(WIDTH * HEIGHT // 8)
         self.fb = framebuf.FrameBuffer(self.buf, WIDTH, HEIGHT, framebuf.MONO_HLSB)
@@ -53,14 +53,25 @@ class Display:
         self.busy = Pin(BUSY_PIN, Pin.OUT)
 
         self.epd = epaper2in9.EPD(spi, self.cs, self.dc, self.rst, self.busy)
-        self.epd.init()
 
+        # if init_display:
+        self.epd.init()
+        # self.fill_white()
+
+        # Partial updates
+        # self.epd.set_lut(self.epd.LUT_PARTIAL_UPDATE)
+
+        # if not init_display:
+        #     self.fb.fill(WHITE)
+        #     self.epd.set_frame_memory(self.buf, 0, 0, WIDTH, HEIGHT)
+        #     self.epd.display_frame()
+
+    def fill_white(self):
+        # self.epd.clear_frame_memory(b"\xFF")
+        # self.epd.display_frame()
         self.fb.fill(WHITE)
         self.epd.set_frame_memory(self.buf, 0, 0, WIDTH, HEIGHT)
         self.epd.display_frame()
-
-        # Partial updates
-        self.epd.set_lut(self.epd.LUT_PARTIAL_UPDATE)
 
     def draw_cube(self, x, y, color):
         cube_border = CUBE_BORDER
@@ -150,45 +161,35 @@ class Display:
         return False
 
     def draw_digit(self, start_col, current, previous):
-        if current != previous:
-            col = 0
-            values = DIGITS[current]
+        # if current != previous:
+        col = 0
+        values = DIGITS[current]
 
-            for value in values:
-                self.draw_col(start_col + col, value)
-                col += 1
+        for value in values:
+            self.draw_col(start_col + col, value)
+            col += 1
 
-            return True
+        return True
 
-        return False
+        # return False
 
     def update(self):
         self.epd.reset()
-
         self.epd.set_frame_memory(self.buf, 0, 0, WIDTH, HEIGHT)
         self.epd.display_frame()
-
         self.epd.sleep()
 
     def set_eco_mode(self, value):
         self.eco_mode = bool(value)
         self.dots_drawn = False
 
-    def display_image(self, buf, width, height):
+    def display_image(self, buf, width, height, clean=False):
         x = round((WIDTH - width) / 2)
         y = round((HEIGHT - height) / 2)
 
-        # self.epd.clear_frame_memory(b"\xFF")
-        # self.epd.display_frame()
-
-        self.epd.reset()
-
-        self.fb.fill(WHITE)
-        self.epd.set_frame_memory(self.buf, 0, 0, WIDTH, HEIGHT)
-        self.epd.display_frame()
+        # if clean:
+        #     self.fill_white()
 
         self.epd.clear_frame_memory(b"\xFF")
         self.epd.set_frame_memory(buf, x, y, width, height)
         self.epd.display_frame()
-
-        self.epd.sleep()
